@@ -6,6 +6,7 @@ namespace IMAOCMS.API.Controllers;
 [ApiController]
 public class DeviceController : CustomBaseController
 {
+    //Test
     private readonly IChafone718Service _service;
     public DeviceController(IChafone718Service service)
     {
