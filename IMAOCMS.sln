@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IMAOCMS.API", "IMAOCMS.API\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IMAOCMS.Web", "IMAOCMS.Web\IMAOCMS.Web.csproj", "{027267ED-6D82-405E-B94E-694368F9369B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IMAOCMS.Desktop", "IMAOCMS.Desktop\IMAOCMS.Desktop.csproj", "{3AA16CFB-FFEA-402B-AB2B-160F3B961619}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{027267ED-6D82-405E-B94E-694368F9369B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{027267ED-6D82-405E-B94E-694368F9369B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{027267ED-6D82-405E-B94E-694368F9369B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AA16CFB-FFEA-402B-AB2B-160F3B961619}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AA16CFB-FFEA-402B-AB2B-160F3B961619}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AA16CFB-FFEA-402B-AB2B-160F3B961619}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AA16CFB-FFEA-402B-AB2B-160F3B961619}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
