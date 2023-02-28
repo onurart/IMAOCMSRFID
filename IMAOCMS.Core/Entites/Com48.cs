@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IMAOCMS.Core.Entites
 {
-    public class Com48
+    public class Com48:BaseEntity
     {
         public int Num { get; set; }
         public int Num1 { get; set; }

@@ -1040,7 +1040,7 @@ namespace IMAOCMS.Core.Entites
         public static int StopInventory(ref byte ComAdr, int frmComPortindex)
         {
             toStopThread = true;
-            Application.DoEvents();
+            //Application.DoEvents();
             Thread.Sleep(10);
             int fCmdRet = StopRead(ref ComAdr, frmComPortindex);
             return fCmdRet;
