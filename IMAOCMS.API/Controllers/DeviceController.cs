@@ -1,6 +1,5 @@
 ﻿using IMAOCMS.API.Business.Services.Interfaces;
 using IMAOCMS.Core.Common.Responses;
-using IMAOCMS.Repository.Constants;
 using Microsoft.AspNetCore.Mvc;
 namespace IMAOCMS.API.Controllers;
 [Route("api/")]
