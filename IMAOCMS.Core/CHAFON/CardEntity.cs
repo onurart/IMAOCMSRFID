@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IMAOCMS.Core.Entites
+namespace IMAOCMS.Core.CHAFON
 {
     public class CardEntity
     {

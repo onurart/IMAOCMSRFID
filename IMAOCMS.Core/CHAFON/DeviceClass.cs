@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IMAOCMS.Core.Entites
+namespace IMAOCMS.Core.CHAFON
 {
     /// <summary>
     /// Cihaz nesnesi, cihaz bilgilerini kaydedin ve cihaz işletim arayüzü sağlayın；
@@ -110,10 +110,10 @@ namespace IMAOCMS.Core.Entites
         /// <param name="deviceName">Ekipman adı</param>
         public DeviceClass(IntPtr devHandle, uint deviceIP, string deviceMac, string deviceName)
         {
-            this.DevHandle = devHandle;
-            this.DeviceIP = deviceIP;
-            this.DeviceMac = deviceMac;
-            this.DeviceName = deviceName;
+            DevHandle = devHandle;
+            DeviceIP = deviceIP;
+            DeviceMac = deviceMac;
+            DeviceName = deviceName;
         }
 
         /// <summary>
@@ -129,14 +129,14 @@ namespace IMAOCMS.Core.Entites
 
             nameBuf = new StringBuilder(userName);
             passwordBuf = new StringBuilder(password);
-            eCode = DevControl.DM_AuthLogin(this._devHandle, nameBuf, passwordBuf, this.communicationTimeout);
+            eCode = DevControl.DM_AuthLogin(_devHandle, nameBuf, passwordBuf, communicationTimeout);
             if (eCode == DevControl.tagErrorCode.DM_ERR_OK)
             {
-                this._isLogin = true;
+                _isLogin = true;
             }
             else
             {
-                this._isLogin = false;
+                _isLogin = false;
             }
 
             return eCode;
@@ -149,10 +149,10 @@ namespace IMAOCMS.Core.Entites
         public DevControl.tagErrorCode Logout()
         {
             DevControl.tagErrorCode eCode = DevControl.tagErrorCode.DM_ERR_OK;
-            if (this._isLogin == true)
+            if (_isLogin == true)
             {
-                eCode = DevControl.DM_LogOutDevice(this._devHandle, this.communicationTimeout);
-                this._isLogin = false;
+                eCode = DevControl.DM_LogOutDevice(_devHandle, communicationTimeout);
+                _isLogin = false;
             }
 
             return eCode;
@@ -171,7 +171,7 @@ namespace IMAOCMS.Core.Entites
 
             passwordBuf = new StringBuilder(oldPassword);
             newPasswordBuf = new StringBuilder(newPassword);
-            eCode = DevControl.DM_ModifyPassword(this._devHandle, passwordBuf, newPasswordBuf, this.communicationTimeout);
+            eCode = DevControl.DM_ModifyPassword(_devHandle, passwordBuf, newPasswordBuf, communicationTimeout);
 
             return eCode;
         }
@@ -188,23 +188,23 @@ namespace IMAOCMS.Core.Entites
             switch (rebootType)
             {
                 case RebootType.DefaultWithoutReboot:
-                    eCode = DevControl.DM_LoadDefault(this._devHandle, this.communicationTimeout);
+                    eCode = DevControl.DM_LoadDefault(_devHandle, communicationTimeout);
                     break;
 
                 case RebootType.DefaultAndReboot:
-                    eCode = DevControl.DM_LoadDefault(this._devHandle, this.communicationTimeout);
+                    eCode = DevControl.DM_LoadDefault(_devHandle, communicationTimeout);
                     if (eCode == DevControl.tagErrorCode.DM_ERR_OK)
                     {
-                        eCode = DevControl.DM_ResetDevice(this._devHandle, this.communicationTimeout);
+                        eCode = DevControl.DM_ResetDevice(_devHandle, communicationTimeout);
                     }
                     break;
 
                 case RebootType.RebootWithoutSave:
-                    eCode = DevControl.DM_ResetDeviceWithoutSave(this._devHandle, this.communicationTimeout);
+                    eCode = DevControl.DM_ResetDeviceWithoutSave(_devHandle, communicationTimeout);
                     break;
 
                 case RebootType.SaveAndReboot:
-                    eCode = DevControl.DM_ResetDevice(this._devHandle, this.communicationTimeout);
+                    eCode = DevControl.DM_ResetDevice(_devHandle, communicationTimeout);
                     break;
 
                 default:
@@ -222,7 +222,7 @@ namespace IMAOCMS.Core.Entites
         /// <returns>Cihaz tarafından desteklenen seri bağlantı noktası sayısı</returns>
         public bool IsSupportChannel(int channelNum)
         {
-            return DevControl.DM_IsComEnable(this._devHandle, channelNum);
+            return DevControl.DM_IsComEnable(_devHandle, channelNum);
         }
     }
 

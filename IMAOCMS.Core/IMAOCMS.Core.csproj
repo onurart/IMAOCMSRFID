@@ -10,4 +10,16 @@
     <Folder Include="Usings\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="DLLs\CustomControl.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DLLs\dmdll.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DLLs\UHFReader288.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

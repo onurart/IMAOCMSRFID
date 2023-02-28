@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IMAOCMS.Core.Entites
+namespace IMAOCMS.Core.CHAFON
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct RFIDTag
@@ -17,10 +17,10 @@ namespace IMAOCMS.Core.Entites
         public int phase_end;
         public byte RSSI;
         public byte ANT;
-        public Int32 Handles;
+        public int Handles;
     }
 
-    public delegate void RFIDCallBack(IntPtr p, Int32 nEvt);
+    public delegate void RFIDCallBack(IntPtr p, int nEvt);
 
     public delegate void RfidTagCallBack(RFIDTag mtag);
 
@@ -30,7 +30,7 @@ namespace IMAOCMS.Core.Entites
 
         static RfidTagCallBack callback = null;
         [DllImport(DLLNAME, CallingConvention = CallingConvention.StdCall)]
-        internal static extern void InitRFIDCallBack(RFIDCallBack t, bool uidBack, int PortHandle);
+        public static extern void InitRFIDCallBack(RFIDCallBack t, bool uidBack, int PortHandle);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.StdCall)]
         public static extern int OpenNetPort(int Port,
@@ -999,7 +999,7 @@ namespace IMAOCMS.Core.Entites
             s = s.Replace(" ", "");
             byte[] buffer = new byte[s.Length / 2];
             for (int i = 0; i < s.Length; i += 2)
-                buffer[i / 2] = (byte)Convert.ToByte(s.Substring(i, 2), 16);
+                buffer[i / 2] = Convert.ToByte(s.Substring(i, 2), 16);
             return buffer;
         }
 
@@ -1053,19 +1053,19 @@ namespace IMAOCMS.Core.Entites
             byte crcL, crcH;
             byte[] data = HexStringToByteArray(s);
             current_crc_value = 0xFFFF;
-            for (i = 0; i <= (data.Length - 1); i++)
+            for (i = 0; i <= data.Length - 1; i++)
             {
-                current_crc_value = current_crc_value ^ (data[i]);
+                current_crc_value = current_crc_value ^ data[i];
                 for (j = 0; j < 8; j++)
                 {
                     if ((current_crc_value & 0x01) != 0)
-                        current_crc_value = (current_crc_value >> 1) ^ 0x8408;
+                        current_crc_value = current_crc_value >> 1 ^ 0x8408;
                     else
-                        current_crc_value = (current_crc_value >> 1);
+                        current_crc_value = current_crc_value >> 1;
                 }
             }
             crcL = Convert.ToByte(current_crc_value & 0xFF);
-            crcH = Convert.ToByte((current_crc_value >> 8) & 0xFF);
+            crcH = Convert.ToByte(current_crc_value >> 8 & 0xFF);
             if (crcH == 0 && crcL == 0)
             {
                 return true;
@@ -1080,7 +1080,7 @@ namespace IMAOCMS.Core.Entites
         public static void workProcess()
         {
             string fInventory_EPC_List = ""; //Sorgu listesini saklayın (okunan veriler değişmediyse yenilenmeyecektir)
-            long startTime = System.Environment.TickCount;
+            long startTime = Environment.TickCount;
             while (!toStopThread)
             {
                 byte[] rfidData = new byte[4096];
@@ -1096,7 +1096,7 @@ namespace IMAOCMS.Core.Entites
                 int fCmdRet = GetRfidTagData(ref ComAddr, rfidData, ref ValidDatalength, FrmHandle);
                 if (fCmdRet == 0)
                 {
-                    startTime = System.Environment.TickCount;
+                    startTime = Environment.TickCount;
                     try
                     {
                         byte[] daw = new byte[ValidDatalength];
@@ -1156,14 +1156,14 @@ namespace IMAOCMS.Core.Entites
 
                         }
                     }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
                         ex.ToString();
                     }
                 }
                 else
                 {
-                    if (System.Environment.TickCount - startTime > 10000)
+                    if (Environment.TickCount - startTime > 10000)
                     {
                         byte TrType = 0;
                         byte[] VersionInfo = new byte[2];
@@ -1178,15 +1178,13 @@ namespace IMAOCMS.Core.Entites
                         byte AntCfg1 = 0;
                         byte OutputRep = 0;
                         byte CheckAnt = 0;
-                        startTime = System.Environment.TickCount;
-                        fCmdRet = RWDev.GetReaderInformation(ref ComAddr, VersionInfo, ref ReaderType, ref TrType, ref dmaxfre, ref dminfre, ref powerdBm, ref ScanTime, ref AntCfg0, ref BeepEn, ref AntCfg1, ref CheckAnt, FrmHandle);
+                        startTime = Environment.TickCount;
+                        fCmdRet = GetReaderInformation(ref ComAddr, VersionInfo, ref ReaderType, ref TrType, ref dmaxfre, ref dminfre, ref powerdBm, ref ScanTime, ref AntCfg0, ref BeepEn, ref AntCfg1, ref CheckAnt, FrmHandle);
 
                     }
                 }
             }
             mythread = null;
         }
-
-
     }
 }

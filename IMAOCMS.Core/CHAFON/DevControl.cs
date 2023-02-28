@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
-namespace IMAOCMS.Core.Entites
+
+namespace IMAOCMS.Core.CHAFON
 {
     internal delegate void SearchCallBack(IntPtr dev, IntPtr data);
 
@@ -413,7 +414,7 @@ namespace IMAOCMS.Core.Entites
             int getLen = bufferValue.Length;
             tagErrorCode errCode;
             errCode = paralist_getnode(paraList, chanNo, paraType, ref getLen, bufferValue);
-            if (errCode == DevControl.tagErrorCode.DM_ERR_OK)
+            if (errCode == tagErrorCode.DM_ERR_OK)
             {
                 errCode = DM_Value2String(paraType, bufferValue, getLen, value, ref valueLen);
             }
