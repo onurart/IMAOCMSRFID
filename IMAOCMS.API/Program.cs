@@ -18,8 +18,7 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Host.ConfigureContainer<ContainerBuilder>(container => container.RegisterModule(new RepoServiceModule()));
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("SqlConnection")));
 var app = builder.Build();
-using (var context = new AppDbContext()) {  context.Database.Migrate(); }
-
+using (var context = new AppDbContext()) { context.Database.Migrate(); }
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

@@ -2,16 +2,16 @@
 using IMAOCMS.Core.Repositories;
 using IMAOCMS.Core.Services;
 using IMAOCMS.Core.UnitOfWorks;
+using IMAOCRM.Repository;
 using IMAOCRM.Repository.Repositories;
 using IMAOCRM.Repository.UnitOfWorks;
-using IMAOCRM.Repository;
-using System.Reflection;
-using IMAOCRM.Service.Service;
 using IMAOCRM.Service.Mapping;
+using IMAOCRM.Service.Service;
+using System.Reflection;
 
 namespace IMAOCMS.API.Modules
 {
-    public class RepoServiceModule : Autofac.Module
+    public class RepoServiceModule:Autofac.Module
     {
         protected override void Load(ContainerBuilder builder)
         {
