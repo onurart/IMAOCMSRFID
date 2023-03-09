@@ -72,7 +72,7 @@ namespace IMAOCMS.API.Business
         {
             _logger.LogWarning("Consume Scoped Service Hosted Service is stopping.");
             _disposed= false;
-            await _chafone718Service.StopReadAsync();
+            var result= await _chafone718Service.StopReadAsync();
             await base.StopAsync(stoppingToken);
         }
     }

@@ -4,6 +4,7 @@ using IMAOCMS.Core.Common.Responses;
 using IMAOCMS.Core.Entites;
 using IMAOCMS.Core.Request;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
@@ -106,6 +107,16 @@ namespace IMAOCMS.API.Business
         {
             toStopThread = true;
             var sadas = curList2;
+
+
+             var sa = curList2.GroupBy(x => x.Epc).Select(group =>
+                    new
+                    {
+                        Count = group.Count(),
+                        RSSI = group.FirstOrDefault().Rssi,
+                        EPC = group.Key
+                    })
+              .OrderBy(group => group.EPC.First()).OrderByDescending(x => x.EPC).ToList();
             try
             {
 
@@ -122,9 +133,10 @@ namespace IMAOCMS.API.Business
         }
         private void inventory()
         {
-            toStopThread = false;
-            while (!toStopThread)
-            {
+            //toStopThread = false;
+            //while (!toStopThread)
+            //{
+
                 byte Ant = 0;
                 int CardNum = 0;
                 int Totallen = 0;
@@ -194,7 +206,7 @@ namespace IMAOCMS.API.Business
                 //    x_time = x_time - CommunicationTime;//减去通讯时间等于标签的实际时间
                 //int sulv = (CardNum * 1000) / x_time;//速度等于张数/时间
                 //total_tagnum = total_tagnum + CardNum;
-            }
+            //}
         }
         #region 
         private string GetReturnCodeDesc(int cmdRet)

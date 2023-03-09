@@ -42,6 +42,7 @@ app.MapGet("api/stopTimer", async (ILoggerFactory loggerFactory, IServiceProvide
 {
     var timer2Service = serviceProvider.GetRequiredService<RFIDWorker>();
     await timer2Service.StopAsync(CancellationToken.None);
+    var status= timer2Service.StopAsync(CancellationToken.None).Status;
     return "success";
 });
 
