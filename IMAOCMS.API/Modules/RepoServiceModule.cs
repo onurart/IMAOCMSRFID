@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace IMAOCMS.API.Modules
 {
-    public class RepoServiceModule:Autofac.Module
+    public class RepoServiceModule : Autofac.Module
     {
         protected override void Load(ContainerBuilder builder)
         {

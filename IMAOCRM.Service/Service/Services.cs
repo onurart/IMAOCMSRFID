@@ -6,12 +6,7 @@ using IMAOCMS.Core.Utilities.Concrete;
 using IMAOCMS.Repository.Constants;
 using IMAOCMS.Service.Exceptions;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace IMAOCRM.Service.Service
 {
@@ -23,6 +18,12 @@ namespace IMAOCRM.Service.Service
         {
             _repository = repository;
             _unitOfWork = unitOfWork;
+        }
+
+        public void Add(T entity)
+        {
+            _repository.Add(entity);
+            _unitOfWork.Commit();
         }
 
         public async Task<IDataResult<T>> AddAsync(T entity)

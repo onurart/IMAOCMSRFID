@@ -12,7 +12,7 @@ public class RFIDReaderController : CustomBaseController
         _service = service;
     }
     [HttpPost]
-    
+
     public async Task<IActionResult> ConnectionDevice()
     {
         try
@@ -51,7 +51,7 @@ public class RFIDReaderController : CustomBaseController
     {
         try
         {
-            var result = await _service.StartReadAsync();
+            var result = await _service.StartRead2Async();
             if (result.Status)
                 return Ok(result);
             else

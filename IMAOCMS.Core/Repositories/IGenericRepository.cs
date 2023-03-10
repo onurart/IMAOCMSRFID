@@ -1,11 +1,6 @@
 ﻿using IMAOCMS.Core.Utilities.Abstract;
 using IMAOCMS.Core.Utilities.Concrete;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace IMAOCMS.Core.Repositories
 {
@@ -19,6 +14,7 @@ namespace IMAOCMS.Core.Repositories
         Task<IDataResult<T>> AddAsync(T entity);
         Task AddRangeAsync(IEnumerable<T> entities);
         IDataResult<T> Update(T entity);
+        void Add(T entity);
         void Remove(T entity);
         void RemoveRange(IEnumerable<T> entities);
         Task<Result> RemoveSoft(T entity);

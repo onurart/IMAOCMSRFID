@@ -1,9 +1,10 @@
 ﻿using IMAOCMS.Core.Entites;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+
 namespace IMAOCRM.Repository
 {
-    public class AppDbContext:DbContext
+    public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -12,17 +13,19 @@ namespace IMAOCRM.Repository
         {
 
         }
-        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        //{
-        //    IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-        //    optionsBuilder.UseSqlServer(config.GetConnectionString("SqlConnection"));
-        //}
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=185.50.69.43;Initial Catalog=IMAOCMS;User Id=sa;Password=1qaz2wsx_?=; TrustServerCertificate=True; MultipleActiveResultSets=true;");
+            IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            optionsBuilder.UseSqlServer(config.GetConnectionString("SqlConnection"));
         }
-        public virtual DbSet<Com48> Com48s { get; set; }
-        public virtual DbSet<Test> cossss { get; set; }
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    optionsBuilder.UseSqlServer("Server=185.50.69.43;Initial Catalog=IMAOCMS;User Id=sa;Password=1qaz2wsx_?=; TrustServerCertificate=True; MultipleActiveResultSets=true;");
+        //}
+        //public virtual DbSet<Com48> Com48s { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<EpcReadData> EpcReadDatas { get; set; }
+        public DbSet<EPCReadTemp> EPCReadTemps { get; set; }
 
         public override int SaveChanges()
         {

@@ -1,5 +1,4 @@
 ﻿using IMAOCMS.Core.Utilities.Abstract;
-using IMAOCMS.Core.Utilities.Concrete;
 
 namespace IMAOCMS.Core.Utilities.Concrete;
 public class DataResult<T> : Result, IDataResult<T>

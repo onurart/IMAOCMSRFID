@@ -38,15 +38,15 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapGet("api/stopTimer", async (ILoggerFactory loggerFactory, IServiceProvider serviceProvider) =>
+app.MapGet("api/StopEpcReader", async (ILoggerFactory loggerFactory, IServiceProvider serviceProvider) =>
 {
     var timer2Service = serviceProvider.GetRequiredService<RFIDWorker>();
     await timer2Service.StopAsync(CancellationToken.None);
-    var status= timer2Service.StopAsync(CancellationToken.None).Status;
+    var status = timer2Service.StopAsync(CancellationToken.None).Status;
     return "success";
 });
 
-app.MapGet("api/startTimer", async (ILoggerFactory loggerFactory, IServiceProvider serviceProvider) =>
+app.MapGet("api/StartEpcReader", async (ILoggerFactory loggerFactory, IServiceProvider serviceProvider) =>
 {
     var timer2Service = serviceProvider.GetRequiredService<RFIDWorker>();
     await timer2Service.StartAsync(CancellationToken.None);

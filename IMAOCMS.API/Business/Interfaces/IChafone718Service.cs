@@ -6,5 +6,6 @@ public interface IChafone718Service
     Task<ApiDataResponse<BaseRequest>> ConnectionDeviceAsync();
     Task<ApiResponse> DisconnectDeviceAsync();
     Task<ApiResponse> StartReadAsync();
+    Task<ApiResponse> StartRead2Async();
     Task<ApiResponse> StopReadAsync();
 }

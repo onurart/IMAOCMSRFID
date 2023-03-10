@@ -1,7 +1,7 @@
 ﻿namespace IMAOCMS.Core.Entites;
-public class EPCReadTemp
+public class EpcReadData:BaseEntity
 {
-    public int Id { get; set; }
+    public int Count { get; set; }
     public string Epc { get; set; }
     public int Rssi { get; set; }
     public byte Ant { get; set; }

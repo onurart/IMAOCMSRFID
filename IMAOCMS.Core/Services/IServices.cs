@@ -1,11 +1,6 @@
 ﻿using IMAOCMS.Core.Utilities.Abstract;
 using IMAOCMS.Core.Utilities.Concrete;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace IMAOCMS.Core.Services
 {
@@ -16,6 +11,7 @@ namespace IMAOCMS.Core.Services
         Task<IDataResult<List<T>>> GetListAsync();
         IQueryable<T> Where(Expression<Func<T, bool>> predicate);
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
+        void Add(T entity);
         Task<IDataResult<T>> AddAsync(T entity);
         Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities);
 

@@ -10,17 +10,19 @@ namespace IMAOCMS.Core.Entites
 
         [ForeignKey(nameof(CreatorId))]
         public int? CreatorId { get; set; }
+        public User? Creator { get; set; }
         public DateTime CreatedDate { get; set; }
 
 
         [ForeignKey(nameof(UpdaterId))]
         public int? UpdaterId { get; set; }
+        public User? Updater { get; set; }
         public DateTime? UpdatedDate { get; set; }
 
 
         [ForeignKey(nameof(DeleterId))]
         public int? DeleterId { get; set; }
-
+        public User? Deleter { get; set; }
         public DateTime? DeletedDate { get; set; }
         public bool? IsDelete { get; set; }
         public bool? IsActive { get; set; }

@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace IMAOCMS.Core.Entites
+﻿namespace IMAOCMS.Core.Entites
 {
-    public class Com48:BaseEntity
+    public class Com48 : BaseEntity
     {
         public int Num { get; set; }
         public int Num1 { get; set; }

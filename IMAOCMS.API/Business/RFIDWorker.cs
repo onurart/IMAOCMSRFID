@@ -1,5 +1,4 @@
 ﻿using IMAOCMS.API.Business.Interfaces;
-using IMAOCRM.Service.Service;
 
 namespace IMAOCMS.API.Business
 {
@@ -71,8 +70,8 @@ namespace IMAOCMS.API.Business
         public override async Task StopAsync(CancellationToken stoppingToken)
         {
             _logger.LogWarning("Consume Scoped Service Hosted Service is stopping.");
-            _disposed= false;
-            var result= await _chafone718Service.StopReadAsync();
+            _disposed = false;
+            var result = await _chafone718Service.StopReadAsync();
             await base.StopAsync(stoppingToken);
         }
     }
