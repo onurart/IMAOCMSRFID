@@ -113,17 +113,12 @@ namespace IMAOCMS.API.Business
 
         public async Task<ApiResponse> StartReadAsync()
         {
-            await ConnectionDeviceAsync();
-            //toStopThread = false;
-            //if (fIsInventoryScan == false)
-            //{
-            //    mythread = new Thread(new ThreadStart(inventory));
-            //    mythread.IsBackground = true;
-            //    mythread.Start();
-            //}
+
+
             try
             {
-                inventory();
+                NewInventory();
+                //inventory();
                 //await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
                 return await Task.FromResult(new ApiResponse() { Message = "Ok", Status = true });
             }
@@ -133,16 +128,16 @@ namespace IMAOCMS.API.Business
                 return await Task.FromResult(new ApiResponse() { Message = "Fault" + " Hata: " + ex.ToString(), Status = false });
             }
         }
-        private void AddRangeToDatabaseAsync()
+        private async void AddRangeToDatabaseAsync()
         {
-            var value = EpcData2.GroupBy(x => x.Epc).Select(group =>
+            var value = curList.GroupBy(x => x.UID).Select(group =>
                    new
                    {
                        Id = 0,
                        Count = group.Count(),
-                       Rssi = group.FirstOrDefault().Rssi,
+                       Rssi = group.FirstOrDefault().RSSI,
                        Epc = group.Key,
-                       Ant = 1,
+                       Ant = group.FirstOrDefault().ANT == 4 ? 3 : group.FirstOrDefault().ANT == 8 ? 4 : group.FirstOrDefault().ANT == 16 ? 5 : group.FirstOrDefault().ANT == 32 ? 6 : group.FirstOrDefault().ANT == 64 ? 7 : group.FirstOrDefault().ANT == 128 ? 8 : 1,
                        EpcDate = DateTime.Now,
                        CreatedDate = DateTime.Now,
                    })
@@ -166,22 +161,26 @@ namespace IMAOCMS.API.Business
 
             //sa.Adapt(EpcData2);
 
-            var result = _epcReadDataService.AddRangeAsync(EpcData);
+            var result = await _epcReadDataService.AddRangeAsync(EpcData);
         }
         public async Task<ApiResponse> StopReadAsync()
         {
             toStopThread = true;
             // var sadas = curList2;
-            var sdas = curList;
+            //var sdas = curList;
 
-            curList.Clear();
+
             try
             {
 
                 AddRangeToDatabaseAsync();
                 EpcData.Clear();
+                curList.Clear();
+
                 fIsInventoryScan = true;
-                await DisconnectDeviceAsync();
+                //DisConnect();
+
+                 await DisconnectDeviceAsync();
                 //await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
                 return await Task.FromResult(new ApiResponse() { Message = "Ok", Status = true });
             }
@@ -191,145 +190,140 @@ namespace IMAOCMS.API.Business
                 return await Task.FromResult(new ApiResponse() { Message = "Fault" + " Hata: " + ex.ToString(), Status = false });
             }
         }
-        private async void inventory()
+
+        public async Task<ApiResponse> StartEpcReader()
         {
-            //toStopThread = false;
-            //while (!toStopThread)
-            //{
-
-            byte Ant = 0;
-            int CardNum = 0;
-            int Totallen = 0;
-            int EPClen, m;
-            byte[] EPC = new byte[50000];
-            int CardIndex;
-            string temps, temp;
-            temp = "";
-            string sEPC;
-            byte MaskMem = 0;
-            byte[] MaskAdr = new byte[2];
-            byte MaskLen = 0;
-            byte[] MaskData = new byte[100];
-            byte MaskFlag = 0;
-            byte AdrTID = 0;
-            byte LenTID = 0;
-            AdrTID = 0;
-            LenTID = 6;
-            MaskFlag = 0;
-            int cbtime = System.Environment.TickCount;
-            //DataGridViewRow rows = new DataGridViewRow();
-            CardNum = 0;
-            //ref fComAdr=0, Qvalue=4, Session=0, MaskMem=0, MaskAdr=0, MaskLen=0, MaskData=0, MaskFlag=0, AdrTID=0, LenTID=6, TIDFlag=0, Target=0, InAnt=128, Scantime=10, FastFlag=1, EPC, ref Ant=1, ref Totallen=266, ref CardNum=19, frmcomportindex=3
-            fCmdRet = RWDev.Inventory_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, AdrTID, LenTID, TIDFlag, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref CardNum, frmcomportindex);
-            total_turns = total_turns + 1;
-            int x_time = System.Environment.TickCount - cbtime;//命令时间
-            string strLog = "Inventory: " + GetReturnCodeDesc(fCmdRet);
-            _logger.LogTrace(strLog);
-
-            if ((fCmdRet == 1) | (fCmdRet == 2) | (fCmdRet == 3) | (fCmdRet == 4))//代表已查找结束，
+            int portNum = 3;
+            int FrmPortIndex = 0;
+            string strException = string.Empty;
+            fBaud = 6;
+            //if (fBaud > 2)
+            //    fBaud = Convert.ToByte(fBaud + 2);
+            fComAdr = 255;//广播地址打开设备
+            await Task.Run(() => fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex));
+            if (fCmdRet != 0)
             {
-                byte[] daw = new byte[Totallen];
-                Array.Copy(EPC, daw, Totallen);
-                temps = ByteArrayToHexString(daw);
-                m = 0;
-                if (CardNum == 0)
-                {
-                    if (Session > 1)
-                        AA_times = AA_times + 1;
-                    return;
-                }
-                AA_times = 0;
-                //antstr = Convert.ToString(Ant, 2).PadLeft(4, '0');
-                for (CardIndex = 0; CardIndex < CardNum; CardIndex++)
-                {
-                    EPClen = daw[m] + 1;
-                    temp = temps.Substring(m * 2 + 2, EPClen * 2);
-                    sEPC = temp.Substring(0, temp.Length - 2);
-                    string RSSI = Convert.ToInt32(temp.Substring(temp.Length - 2, 2), 16).ToString();
-                    m = m + EPClen + 1;
-                    if (sEPC.Length != (EPClen - 1) * 2)
-                    {
-                        return;
-                    }
-                    bool isonlistview = false;
-
-                    EpcData2.Add(new EpcReadData() { Id = 0, Epc = sEPC, Ant = Ant, EpcDate = DateTime.Now, Rssi = Convert.ToInt32(RSSI) });
-                    //EpcTemp = new();
-                    //EpcTemp.Id = 0;
-                    //EpcTemp.Epc = sEPC;
-                    //EpcTemp.Ant = Ant;
-                    //EpcTemp.EpcDate = DateTime.Now;
-                    //EpcTemp.Rssi = Convert.ToInt32(RSSI);
-                    //_epcReadTempService.Add(EpcTemp);
-
-
-
-                }
+                string strLog = "Connect failed: " + GetReturnCodeDesc(fCmdRet);
+                _logger.LogError(strLog);
+                return await Task.FromResult(new ApiResponse() { Message = strLog, Status = false });
+                //return;
             }
-            //if (x_time > CommunicationTime)
-            //    x_time = x_time - CommunicationTime;//减去通讯时间等于标签的实际时间
-            //int sulv = (CardNum * 1000) / x_time;//速度等于张数/时间
-            //total_tagnum = total_tagnum + CardNum;
-            //}
+            else
+            {
+                frmcomportindex = FrmPortIndex;
+                string strLog = "Connected " + portNum.ToString() + "@" + fBaud.ToString();
+                _logger.LogInformation(strLog);
+                if (FrmPortIndex > 0)
+                {
+                    RWDev.InitRFIDCallBack(elegateRFIDCallBack, true, FrmPortIndex);
+                    NewInventory();
+
+
+                }
+
+                return await Task.FromResult(new ApiResponse() { Message = strLog, Status = true });
+            }
         }
+        void Connection()
+        {
+            int portNum = 3;
+            int FrmPortIndex = 0;
+            string strException = string.Empty;
+            fBaud = 6;
+            //if (fBaud > 2)
+            //    fBaud = Convert.ToByte(fBaud + 2);
+            fComAdr = 255;//广播地址打开设备
+            fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
+            if (fCmdRet != 0)
+            {
+                string strLog = "Connect failed: " + GetReturnCodeDesc(fCmdRet);
+                _logger.LogError(strLog);
+            }
+            else
+            {
+                frmcomportindex = FrmPortIndex;
+                string strLog = "Connected " + portNum.ToString() + "@" + fBaud.ToString();
+                _logger.LogInformation(strLog);
+                if (FrmPortIndex > 0)
+                    RWDev.InitRFIDCallBack(elegateRFIDCallBack, true, FrmPortIndex);
+            }
+        }
+        void DisConnect()
+        {
+   _logger.LogError("Disconnect : " + fCmdRet.ToString());
+            if(fCmdRet!=48)
+            fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
+         
+        }
+        public Task<bool> ConStartAndStopAndClose()
+        {
+            //Connection();
 
 
+            if (fCmdRet == 30 || fCmdRet == 48||fCmdRet==55)
+            {
+                Connection();
 
+            }
+            NewInventory();
+            DisConnect();
+            return Task.FromResult(true);
+        }
 
         public async Task<ApiResponse> StartRead2Async()
         {
-            Array.Clear(antlist, 0, 16);
-           
-                antlist[0] = 1;
-                InAnt = 0x80;
-         
-                antlist[1] = 1;
-                InAnt = 0x81;
-       
-                antlist[2] = 1;
-                InAnt = 0x82;
-      
-                antlist[3] = 1;
-                InAnt = 0x83;
-      
-                antlist[4] = 1;
-                InAnt = 0x84;
-       
-                antlist[5] = 1;
-                InAnt = 0x85;
-           
-                antlist[6] = 1;
-                InAnt = 0x86;
-        
-                antlist[7] = 1;
-                InAnt = 0x87;
-        
-                antlist[8] = 1;
-                InAnt = 0x88;
-      
-                antlist[9] = 1;
-                InAnt = 0x89;
-           
-                antlist[10] = 1;
-                InAnt = 0x8A;
-          
-                antlist[11] = 1;
-                InAnt = 0x8B;
-          
-                antlist[12] = 1;
-                InAnt = 0x8C;
-       
-                antlist[13] = 1;
-                InAnt = 0x8D;
-            
-                antlist[14] = 1;
-                InAnt = 0x8E;
-            
+            //Array.Clear(antlist, 0, 16);
 
-            
-                antlist[15] = 1;
-                InAnt = 0x8F;
-           
+            //antlist[0] = 1;
+            //InAnt = 0x80;
+
+            //antlist[1] = 1;
+            //InAnt = 0x81;
+
+            //antlist[2] = 1;
+            //InAnt = 0x82;
+
+            //antlist[3] = 1;
+            //InAnt = 0x83;
+
+            //antlist[4] = 1;
+            //InAnt = 0x84;
+
+            //antlist[5] = 1;
+            //InAnt = 0x85;
+
+            //antlist[6] = 1;
+            //InAnt = 0x86;
+
+            //antlist[7] = 1;
+            //InAnt = 0x87;
+
+            //antlist[8] = 1;
+            //InAnt = 0x88;
+
+            //antlist[9] = 1;
+            //InAnt = 0x89;
+
+            //antlist[10] = 1;
+            //InAnt = 0x8A;
+
+            //antlist[11] = 1;
+            //InAnt = 0x8B;
+
+            //antlist[12] = 1;
+            //InAnt = 0x8C;
+
+            //antlist[13] = 1;
+            //InAnt = 0x8D;
+
+            //antlist[14] = 1;
+            //InAnt = 0x8E;
+
+
+
+            //antlist[15] = 1;
+            //InAnt = 0x8F;
+
 
 
             //await ConnectionDeviceAsync();
@@ -342,7 +336,11 @@ namespace IMAOCMS.API.Business
             //}
             try
             {
-                NewInventory();
+                //NewInventory();
+                //DisConnect ();
+                var sss = await ConStartAndStopAndClose();
+
+
                 //await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
                 return await Task.FromResult(new ApiResponse() { Message = "Ok", Status = true });
             }
@@ -361,6 +359,59 @@ namespace IMAOCMS.API.Business
         int AntennaNum = 16;
         private void NewInventory()
         {
+            Array.Clear(antlist, 0, 16);
+
+            antlist[0] = 1;
+            InAnt = 0x80;
+
+            antlist[1] = 1;
+            InAnt = 0x81;
+
+            antlist[2] = 1;
+            InAnt = 0x82;
+
+            antlist[3] = 1;
+            InAnt = 0x83;
+
+            antlist[4] = 1;
+            InAnt = 0x84;
+
+            antlist[5] = 1;
+            InAnt = 0x85;
+
+            antlist[6] = 1;
+            InAnt = 0x86;
+
+            antlist[7] = 1;
+            InAnt = 0x87;
+
+            antlist[8] = 1;
+            InAnt = 0x88;
+
+            antlist[9] = 1;
+            InAnt = 0x89;
+
+            antlist[10] = 1;
+            InAnt = 0x8A;
+
+            antlist[11] = 1;
+            InAnt = 0x8B;
+
+            antlist[12] = 1;
+            InAnt = 0x8C;
+
+            antlist[13] = 1;
+            InAnt = 0x8D;
+
+            antlist[14] = 1;
+            InAnt = 0x8E;
+
+
+
+            antlist[15] = 1;
+            InAnt = 0x8F;
+
+
             for (int m = 0; m < AntennaNum; m++)
             {
                 InAnt = (byte)(m | 0x80);
@@ -377,11 +428,12 @@ namespace IMAOCMS.API.Business
 
         private void flashmix_G2()
         {
+            
 
             ReadMem = (byte)1;
             ReadAdr = HexStringToByteArray("0002");
             ReadLen = Convert.ToByte("06", 16);
-            Psd = HexStringToByteArray("00000001");
+            Psd = HexStringToByteArray("00000000");
 
 
 
@@ -400,7 +452,16 @@ namespace IMAOCMS.API.Business
             MaskFlag = 0;
             int cbtime = System.Environment.TickCount;
             CardNum = 0;
-            fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex);
+            try
+            {
+                if(fCmdRet!=48)
+                fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex);
+            }
+            catch (Exception)
+            {
+
+            }
+
             int cmdTime = System.Environment.TickCount - cbtime;//命令时间
 
             if (CardNum == 0)
@@ -410,34 +471,37 @@ namespace IMAOCMS.API.Business
             }
             else
                 AA_times = 0;
-            if ((fCmdRet == 1) || (fCmdRet == 2) || (fCmdRet == 0xFB) || (fCmdRet == 0x26))
-            {
 
-                var dsa = ByteToHex(EPC);
+            
 
-                var sada = HexToByte(dsa);
+            //if ((fCmdRet == 1) || (fCmdRet == 2) || (fCmdRet == 0xFB) || (fCmdRet == 0x26))
+            //{
 
+            //    var dsa = ByteToHex(EPC);
 
-
-
-
+            //    var sada = HexToByte(dsa);
 
 
-                //if (cmdTime > CommunicationTime)
-                //    cmdTime = cmdTime - CommunicationTime;//减去通讯时间等于标签的实际时间
-                //if (cmdTime > 0)
-                //{
-                //    //int tagrate = (CardNum * 1000) / cmdTime;//速度等于张数/时间
-                //    //IntPtr ptrWnd = IntPtr.Zero;
-                //    //ptrWnd = FindWindow(null, "UHFReader288 Demo V5.0"); //0x00060f1a
-                //    //if (ptrWnd != IntPtr.Zero)         // 检查当前统计窗口是否打开
-                //    //{
-                //    //    string para = tagrate.ToString() + "," + total_tagnum.ToString() + "," + cmdTime.ToString();
-                //    //    SendMessage(ptrWnd, WM_SENDTAGSTAT, IntPtr.Zero, para);
-                //    //}
-                //}
 
-            }
+
+
+
+
+            //    //if (cmdTime > CommunicationTime)
+            //    //    cmdTime = cmdTime - CommunicationTime;//减去通讯时间等于标签的实际时间
+            //    //if (cmdTime > 0)
+            //    //{
+            //    //    //int tagrate = (CardNum * 1000) / cmdTime;//速度等于张数/时间
+            //    //    //IntPtr ptrWnd = IntPtr.Zero;
+            //    //    //ptrWnd = FindWindow(null, "UHFReader288 Demo V5.0"); //0x00060f1a
+            //    //    //if (ptrWnd != IntPtr.Zero)         // 检查当前统计窗口是否打开
+            //    //    //{
+            //    //    //    string para = tagrate.ToString() + "," + total_tagnum.ToString() + "," + cmdTime.ToString();
+            //    //    //    SendMessage(ptrWnd, WM_SENDTAGSTAT, IntPtr.Zero, para);
+            //    //    //}
+            //    //}
+
+            //}
             //IntPtr ptrWnd1 = IntPtr.Zero;
             //ptrWnd1 = FindWindow(null, "UHFReader288 Demo V5.0");
             //if (ptrWnd1 != IntPtr.Zero)         // 检查当前统计窗口是否打开
@@ -496,88 +560,88 @@ namespace IMAOCMS.API.Business
         {
             switch (cmdRet)
             {
-                case 0x00:
-                    return "successfully";
-                case 0x01:
-                    return "Return before Inventory finished";
-                case 0x02:
-                    return "the Inventory-scan-time overflow";
-                case 0x03:
-                    return "More Data";
-                case 0x04:
-                    return "Reader module MCU is Full";
-                case 0x05:
-                    return "Access Password Error";
-                case 0x09:
-                    return "Destroy Password Error";
-                case 0x0a:
-                    return "Destroy Password Error Cannot be Zero";
-                case 0x0b:
-                    return "Tag Not Support the command";
-                case 0x0c:
-                    return "Use the commmand,Access Password Cannot be Zero";
-                case 0x0d:
-                    return "Tag is protected,cannot set it again";
-                case 0x0e:
-                    return "Tag is unprotected,no need to reset it";
-                case 0x10:
-                    return "There is some locked bytes,write fail";
-                case 0x11:
-                    return "can not lock it";
-                case 0x12:
-                    return "is locked,cannot lock it again";
-                case 0x13:
-                    return "Parameter Save Fail,Can Use Before Power";
-                case 0x14:
-                    return "Cannot adjust";
-                case 0x15:
-                    return "Return before Inventory finished";
-                case 0x16:
-                    return "Inventory-Scan-Time overflow";
-                case 0x17:
-                    return "More Data";
-                case 0x18:
-                    return "Reader module MCU is full";
-                case 0x19:
-                    return "Not Support Command Or AccessPassword Cannot be Zero";
-                case 0x1A:
-                    return "Perform error tag custom function";
-                case 0xF8:
-                    return "Antenna connection detect errors";
-                case 0xF9:
-                    return "Command execution error";
-                case 0xFA:
-                    return "Get Tag,Poor Communication,Inoperable";
-                case 0xFB:
-                    return "No Tag Operable";
-                case 0xFC:
-                    return "Tag Return ErrorCode";
-                case 0xFD:
-                    return "Command length wrong";
-                case 0xFE:
-                    return "Illegal command";
-                case 0xFF:
-                    return "Parameter Error";
-                case 0x30:
-                    return "Communication error";
-                case 0x31:
-                    return "CRC checksummat error";
-                case 0x32:
-                    return "Return data length error";
-                case 0x33:
-                    return "Communication busy";
-                case 0x34:
-                    return "Busy,command is being executed";
-                case 0x35:
-                    return "ComPort Opened";
-                case 0x36:
-                    return "ComPort Closed";
-                case 0x37:
-                    return "Invalid Handle";
-                case 0x38:
-                    return "Invalid Port";
-                case 0xEE:
-                    return "Return Command Error";
+                case 0x00://0
+                    return "Başarılı";
+                case 0x01://1
+                    return "Envanter Bitmeden iade edin";
+                case 0x02://2
+                    return "Envanter tarama zamanı taşması";
+                case 0x03://3
+                    return "Daha Fazla Veri";
+                case 0x04://4
+                    return "Okuyucu modülü MCU Dolu";
+                case 0x05://5
+                    return "Erişim Şifresi Hatası";
+                case 0x09://9
+                    return "Şifreyi Yok Et Hatası";
+                case 0x0a://10
+                    return "Şifre Yok Hatası Sıfır Olamaz";
+                case 0x0b://11
+                    return "Etiket komutu desteklemiyor";
+                case 0x0c://12
+                    return "Komutu kullanın, Erişim Şifresi Sıfır Olamaz";
+                case 0x0d://13
+                    return "Etiket korumalı, tekrar ayarlanamıyor";
+                case 0x0e://14
+                    return "Etiket korumasız, sıfırlamaya gerek yok";
+                case 0x10://16
+                    return "Bazı kilitli baytlar var, yazma başarısız";
+                case 0x11://17
+                    return "Kilitleyemezsin";
+                case 0x12://18
+                    return "Kilitli, Tekrar Kilitlenemez";
+                case 0x13://19
+                    return "Parametre Kaydetme Başarısız, Güç Vermeden Önce Kullanılabilir";
+                case 0x14://20
+                    return "Ayarlanamıyor";
+                case 0x15://21
+                    return "Envanter bitmeden iade edin";
+                case 0x16://22
+                    return "Envanter-Tarama-Zamanı taşması";
+                case 0x17://23
+                    return "Daha Fazla Veri";
+                case 0x18://24
+                    return "Okuyucu modülü MCU dolu";
+                case 0x19://25
+                    return "Komutu Desteklemiyor Veya AccessPassword Sıfır Olamaz";
+                case 0x1A://26
+                    return "Hata etiketi özel işlevini gerçekleştirin";
+                case 0xF8://248
+                    return "Anten bağlantısı algılama hataları";
+                case 0xF9://249
+                    return "Komut yürütme hatası";
+                case 0xFA://250
+                    return "Etiket Al,Zayıf İletişim,Çalışamaz";
+                case 0xFB://251
+                    return "Çalıştırılabilir Etiket Yok";
+                case 0xFC://252
+                    return "Etiket Dönüş HataKodu";
+                case 0xFD://253
+                    return "Komut uzunluğu yanlış";
+                case 0xFE://254
+                    return "Geçersiz komut";
+                case 0xFF://255
+                    return "Parametre Hatası";
+                case 0x30://48
+                    return "İletişim hatası";
+                case 0x31://49
+                    return "CRC sağlama toplamı hatası";
+                case 0x32://50
+                    return "Dönüş veri uzunluğu hatası";
+                case 0x33://51
+                    return "İletişim meşgul";
+                case 0x34://52
+                    return "Meşgul, komut yürütülüyor";
+                case 0x35://53
+                    return "ComPort Açıldı";
+                case 0x36://54
+                    return "ComPort Kapalı";
+                case 0x37://55
+                    return "Geçersiz tutamaç";
+                case 0x38://56
+                    return "Geçersiz Bağlantı Noktası";
+                case 0xEE://238
+                    return "Dönüş Komutu Hatası";
                 default:
                     return "";
             }

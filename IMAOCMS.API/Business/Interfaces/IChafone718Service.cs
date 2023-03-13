@@ -8,4 +8,5 @@ public interface IChafone718Service
     Task<ApiResponse> StartReadAsync();
     Task<ApiResponse> StartRead2Async();
     Task<ApiResponse> StopReadAsync();
+    Task<ApiResponse> StartEpcReader();
 }

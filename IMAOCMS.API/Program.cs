@@ -5,7 +5,14 @@ using IMAOCMS.API.Filters;
 using IMAOCMS.API.Modules;
 using IMAOCRM.Repository;
 using Microsoft.EntityFrameworkCore;
+using NLog;
+using NLog.Web;
+using System;
 
+var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
+logger.Debug("init main");
+try
+{
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -22,7 +29,8 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(buil
 
 builder.Services.AddSingleton<RFIDWorker>();
 //builder.Services.AddHostedService(op => op.GetRequiredService<RFIDWorker>());
-
+builder.Logging.ClearProviders();
+builder.WebHost.UseNLog();
 var app = builder.Build();
 using (var context = new AppDbContext()) { context.Database.Migrate(); }
 // Configure the HTTP request pipeline.
@@ -53,3 +61,14 @@ app.MapGet("api/StartEpcReader", async (ILoggerFactory loggerFactory, IServicePr
     return "success";
 });
 app.Run();
+}
+catch (Exception exception)
+{
+    logger.Error(exception, "Stopped program because of exception");
+    throw;
+}
+finally
+{
+    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
+    NLog.LogManager.Shutdown();
+}
