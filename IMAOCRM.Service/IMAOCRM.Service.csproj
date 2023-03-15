@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\IMAOCMS.Core\IMAOCMS.Core.csproj" />
     <ProjectReference Include="..\IMAOCRM.Repository\IMAOCRM.Repository.csproj" />
   </ItemGroup>

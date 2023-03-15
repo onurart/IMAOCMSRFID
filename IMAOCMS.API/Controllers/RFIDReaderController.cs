@@ -1,8 +1,10 @@
 ﻿using IMAOCMS.API.Business.Interfaces;
 using IMAOCMS.Core.Common.Responses;
+using IMAOCMS.Core.DTOs;
+using IMAOCMS.Core.Entites;
 using Microsoft.AspNetCore.Mvc;
 namespace IMAOCMS.API.Controllers;
-[Route("[action]")]
+[Route("/api/[action]")]
 public class RFIDReaderController : CustomBaseController
 {
     private readonly IChafone718Service _service;
@@ -12,12 +14,11 @@ public class RFIDReaderController : CustomBaseController
         _service = service;
     }
     [HttpPost]
-
-    public async Task<IActionResult> ConnectionDevice()
+    public async Task<IActionResult> AddDeviceConnectionSettingsDb(RFIDDeviceDto rFIDDeviceDto)
     {
         try
         {
-            var result = await _service.ConnectionDeviceAsync();
+            var result = await _service.AddDeviceConnectionSettingsDb(rFIDDeviceDto);
             if (result.Status)
                 return Ok(result);
             else
@@ -29,7 +30,38 @@ public class RFIDReaderController : CustomBaseController
         }
     }
     [HttpPost]
-    [Route("[action]")]
+    public async Task<IActionResult> AddDeviceAntennaDb(RFIDDeviceAntennaDto rFIDDeviceAntennaDto)
+    {
+        try
+        {
+            var result = await _service.AddDeviceAntennaDb(rFIDDeviceAntennaDto);
+            if (result.Status)
+                return Ok(result);
+            else
+                return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse() { Message = "Hata" + " - " + ex.ToString(), Status = false });
+        }
+    }
+    [HttpPost]
+    public async Task<IActionResult> ConnectionDevice(RFIDDeviceDto rFIDDeviceDto)
+    {
+        try
+        {
+            var result = await _service.ConnectionDeviceAsync(rFIDDeviceDto);
+            if (result.Status)
+                return Ok(result);
+            else
+                return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse() { Message = "Hata" + " - " + ex.ToString(), Status = false });
+        }
+    }
+    [HttpPost]
     public async Task<IActionResult> DisconnectDevice()
     {
         try

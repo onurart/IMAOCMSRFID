@@ -16,7 +16,16 @@ namespace IMAOCRM.Repository.UnitOfWorks
 
         public async Task CommitAsync()
         {
-            await _appDbContext.SaveChangesAsync();
+            try
+            {
+await _appDbContext.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+               // throw;
+            }
+            
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using IMAOCMS.API.Business.Interfaces;
+﻿using AutoMapper;
+using IMAOCMS.API.Business.Interfaces;
 using IMAOCMS.Core.CHAFON;
 using IMAOCMS.Core.Common.Responses;
 using IMAOCMS.Core.DTOs;
@@ -19,14 +20,19 @@ namespace IMAOCMS.API.Business
         private readonly ILogger<Chafone718Service> _logger;
         private readonly IEpcReadDataService _epcReadDataService;
         private readonly IEPCReadTempService _epcReadTempService;
+        private readonly IRFIDDeviceService _rfidDeviceService;
+        private readonly IRFIDDeviceAntennaService _rfidDeviceAntennaService;
+        private readonly IMapper _mapper;
         RFIDCallBack elegateRFIDCallBack;
-        public Chafone718Service(ILogger<Chafone718Service> logger, IEpcReadDataService epcReadDataService, IEPCReadTempService epcReadTempService)
+        public Chafone718Service(ILogger<Chafone718Service> logger, IEpcReadDataService epcReadDataService, IEPCReadTempService epcReadTempService, IRFIDDeviceService rfidDeviceService, IRFIDDeviceAntennaService rfidDeviceAntennaService)
         {
             _logger = logger;
             _epcReadDataService = epcReadDataService;
             _epcReadTempService = epcReadTempService;
 
             elegateRFIDCallBack = new RFIDCallBack(GetUid);
+            _rfidDeviceService = rfidDeviceService;
+            _rfidDeviceAntennaService = rfidDeviceAntennaService;
         }
         private static object LockFlag = new object();
 
@@ -63,49 +69,73 @@ namespace IMAOCMS.API.Business
         public static List<EpcReadData> EpcData = new();
         public static List<EpcReadData> EpcData2 = new();
         public static EPCReadTemp EpcTemp;
-        private volatile bool fIsInventoryScan = false;
+        private static bool fIsInventoryScan = false;
         private static bool toStopThread = false;
         private byte[] fPassWord = new byte[4];
-        public async Task<ApiDataResponse<BaseRequest>> ConnectionDeviceAsync()
+        private static List<RFIDDeviceAntenna> fAntennaList;
+        public async Task<ApiDataResponse<RFIDDevice>> AddDeviceConnectionSettingsDb(RFIDDeviceDto rFIDDeviceDto)
+        {
+            //var value =  _mapper.Map<RFIDDevice>(rFIDDeviceDto);
+            var result = await _rfidDeviceService.AddAsync(rFIDDeviceDto.Adapt<RFIDDevice>());
+            if (result.Success)
+                return await Task.FromResult(new ApiDataResponse<RFIDDevice>() { Data = result.Data, Message = result.Message, Status = true });
+            else
+                return await Task.FromResult(new ApiDataResponse<RFIDDevice>() { Data = result.Data, Message = result.Message, Status = false });
+        }
+        public async Task<ApiDataResponse<RFIDDeviceAntenna>> AddDeviceAntennaDb(RFIDDeviceAntennaDto rFIDDeviceAntennaDto)
+        {
+            //var value =  _mapper.Map<RFIDDevice>(rFIDDeviceDto);
+            var result = await _rfidDeviceAntennaService.AddAsync(rFIDDeviceAntennaDto.Adapt<RFIDDeviceAntenna>());
+            if (result.Success)
+                return await Task.FromResult(new ApiDataResponse<RFIDDeviceAntenna>() { Data = result.Data, Message = result.Message, Status = true });
+            else
+                return await Task.FromResult(new ApiDataResponse<RFIDDeviceAntenna>() { Data = result.Data, Message = result.Message, Status = false });
+        }
+        public async Task<ApiResponse> ConnectionDeviceAsync(RFIDDeviceDto fIDDeviceDto)
         {
 
-            int portNum = 3;
+            //int portNum = 3;
             int FrmPortIndex = 0;
             string strException = string.Empty;
             fBaud = 6;
             //if (fBaud > 2)
             //    fBaud = Convert.ToByte(fBaud + 2);
             fComAdr = 255;//广播地址打开设备
-            await Task.Run(() => fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex));
+            var result = fCmdRet = RWDev.OpenComPort(fIDDeviceDto.Portnum, ref fComAdr, Convert.ToByte(fIDDeviceDto.Baud), ref FrmPortIndex);
             if (fCmdRet != 0)
             {
                 string strLog = "Connect failed: " + GetReturnCodeDesc(fCmdRet);
                 _logger.LogError(strLog);
-                return await Task.FromResult(new ApiDataResponse<BaseRequest>() { Data = baseRequest, Message = strLog, Status = false });
+                return await Task.FromResult(new ApiResponse() { Message = GetReturnCodeDesc(fCmdRet), Status = false });
                 //return;
             }
             else
             {
                 frmcomportindex = FrmPortIndex;
-                string strLog = "Connected " + portNum.ToString() + "@" + fBaud.ToString();
-                _logger.LogInformation(strLog);
+                // string strLog = "Connected " + "@" + fBaud.ToString();
+                // _logger.LogInformation(strLog);
                 if (FrmPortIndex > 0)
                     RWDev.InitRFIDCallBack(elegateRFIDCallBack, true, FrmPortIndex);
-                return await Task.FromResult(new ApiDataResponse<BaseRequest>() { Data = baseRequest, Message = strLog, Status = true });
+                return await Task.FromResult(new ApiResponse() { Message = GetReturnCodeDesc(fCmdRet), Status = true });
             }
         }
         public async Task<ApiResponse> DisconnectDeviceAsync()
         {
-            //_frmcomportindex = 1;
             try
             {
-                await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
-                return await Task.FromResult(new ApiResponse() { Message = "Ok", Status = true });
+                var result = fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
+                if (fCmdRet != 0)
+                {
+                    return await Task.FromResult(new ApiResponse() { Message = GetReturnCodeDesc(fCmdRet), Status = false });
+                }
+                else
+                {
+                    return await Task.FromResult(new ApiResponse() { Message = GetReturnCodeDesc(fCmdRet), Status = true });
+                }
             }
             catch (Exception e)
             {
                 return await Task.FromResult(new ApiResponse() { Message = e.Message, Status = true });
-                throw;
             }
 
 
@@ -117,6 +147,7 @@ namespace IMAOCMS.API.Business
 
             try
             {
+                fIsInventoryScan = true;
                 NewInventory();
                 //inventory();
                 //await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
@@ -128,44 +159,73 @@ namespace IMAOCMS.API.Business
                 return await Task.FromResult(new ApiResponse() { Message = "Fault" + " Hata: " + ex.ToString(), Status = false });
             }
         }
-        private async void AddRangeToDatabaseAsync()
+        private void AddRangeToDatabaseAsync()
         {
-            var value = curList.GroupBy(x => x.UID).Select(group =>
-                   new
-                   {
-                       Id = 0,
-                       Count = group.Count(),
-                       Rssi = group.FirstOrDefault().RSSI,
-                       Epc = group.Key,
-                       Ant = group.FirstOrDefault().ANT == 4 ? 3 : group.FirstOrDefault().ANT == 8 ? 4 : group.FirstOrDefault().ANT == 16 ? 5 : group.FirstOrDefault().ANT == 32 ? 6 : group.FirstOrDefault().ANT == 64 ? 7 : group.FirstOrDefault().ANT == 128 ? 8 : 1,
-                       EpcDate = DateTime.Now,
-                       CreatedDate = DateTime.Now,
-                   })
-             .OrderBy(group => group.Epc.First()).OrderByDescending(x => x.Epc).ToList();
-
-            foreach (var item in value)
+            if (curList.Count != 0)
             {
-                EpcData.Add(new EpcReadData
-                {
-                    Id = item.Id,
-                    Count = item.Count,
-                    Rssi = item.Rssi,
-                    Epc = item.Epc,
-                    Ant = Convert.ToByte(item.Ant),
-                    EpcDate = DateTime.Now,
-                    CreatedDate = item.CreatedDate
-                });
-            }
 
+
+                var value = curList.GroupBy(x => x.UID).Select(group =>
+                       new
+                       {
+                           Id = 0,
+                           Count = group.Count(),
+                           Rssi = group.FirstOrDefault().RSSI,
+                           Epc = group.Key,
+                           Ant = group.FirstOrDefault().ANT == 4 ? 3 : group.FirstOrDefault().ANT == 8 ? 4 : group.FirstOrDefault().ANT == 16 ? 5 : group.FirstOrDefault().ANT == 32 ? 6 : group.FirstOrDefault().ANT == 64 ? 7 : group.FirstOrDefault().ANT == 128 ? 8 : 1,
+                           EpcDate = DateTime.Now,
+                           CreatedDate = DateTime.Now,
+                       })
+                 .OrderBy(group => group.Epc.First()).OrderByDescending(x => x.Epc).ToList();
+
+                foreach (var item in value)
+                {
+                    EpcData.Add(new EpcReadData
+                    {
+                        Id = item.Id,
+                        Count = item.Count,
+                        Rssi = item.Rssi,
+                        Epc = item.Epc,
+                        Ant = Convert.ToByte(item.Ant),
+                        EpcDate = DateTime.Now,
+                        CreatedDate = item.CreatedDate
+                    });
+
+                }
+
+                if (EpcData.Count != 0)
+                {
+                    foreach (var item in EpcData)
+                    {
+                        EpcReadData epcReadData = new EpcReadData
+                        {
+                            Id = item.Id,
+                            Count = item.Count,
+                            Rssi = item.Rssi,
+                            Epc = item.Epc,
+                            Ant = Convert.ToByte(item.Ant),
+                            EpcDate = DateTime.Now,
+                            CreatedDate = item.CreatedDate
+                        };
+                        _epcReadDataService.Add(epcReadData);
+                    }
+                    //var result = await _epcReadDataService.AddRangeAsync(EpcData);
+                    //var resultes =  fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
+                    EpcData.Clear();
+                    curList.Clear();
+                    fIsInventoryScan = false;
+                }
+            }
             //var result = EpcData2.Adapt(sa);
 
             //sa.Adapt(EpcData2);
 
-            var result = await _epcReadDataService.AddRangeAsync(EpcData);
+
+
         }
-        public async Task<ApiResponse> StopReadAsync()
+        public Task<ApiResponse> StopReadAsync()
         {
-            toStopThread = true;
+            //toStopThread = true;
             // var sadas = curList2;
             //var sdas = curList;
 
@@ -173,21 +233,26 @@ namespace IMAOCMS.API.Business
             try
             {
 
+                // var result =  await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
+                //await DisconnectDeviceAsync();
+
                 AddRangeToDatabaseAsync();
                 EpcData.Clear();
                 curList.Clear();
 
-                fIsInventoryScan = true;
+
+
+                //fIsInventoryScan = true;
                 //DisConnect();
 
-                 await DisconnectDeviceAsync();
-                //await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
-                return await Task.FromResult(new ApiResponse() { Message = "Ok", Status = true });
+
+                fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
+                return Task.FromResult(new ApiResponse() { Message = "Ok", Status = true });
             }
             catch (Exception ex)
             {
                 //_logger.LogError($"VF474Service-DisconnectDeviceAsync:{ex.ToString()}|{ex.StackTrace.ToString()}");
-                return await Task.FromResult(new ApiResponse() { Message = "Fault" + " Hata: " + ex.ToString(), Status = false });
+                return Task.FromResult(new ApiResponse() { Message = "Fault" + " Hata: " + ex.ToString(), Status = false });
             }
         }
 
@@ -224,7 +289,7 @@ namespace IMAOCMS.API.Business
                 return await Task.FromResult(new ApiResponse() { Message = strLog, Status = true });
             }
         }
-        void Connection()
+        void ConnectionAsync()
         {
             int portNum = 3;
             int FrmPortIndex = 0;
@@ -233,8 +298,12 @@ namespace IMAOCMS.API.Business
             //if (fBaud > 2)
             //    fBaud = Convert.ToByte(fBaud + 2);
             fComAdr = 255;//广播地址打开设备
-            fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
-            if (fCmdRet != 0)
+
+            var result =  fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
+            if (result != 0)
+
+            //fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
+            //if (fCmdRet != 0)
             {
                 string strLog = "Connect failed: " + GetReturnCodeDesc(fCmdRet);
                 _logger.LogError(strLog);
@@ -248,26 +317,50 @@ namespace IMAOCMS.API.Business
                     RWDev.InitRFIDCallBack(elegateRFIDCallBack, true, FrmPortIndex);
             }
         }
-        void DisConnect()
+        async Task DisConnectAsync()
         {
-   _logger.LogError("Disconnect : " + fCmdRet.ToString());
-            if(fCmdRet!=48)
-            fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
-         
+            _logger.LogError("Disconnect : " + fCmdRet.ToString());
+            if (fCmdRet != 48)
+                await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
+            //fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
+
         }
-        public Task<bool> ConStartAndStopAndClose()
+        public async Task ConStartAndStopAndClose()
         {
             //Connection();
-
-
-            if (fCmdRet == 30 || fCmdRet == 48||fCmdRet==55)
+            var result = await _rfidDeviceAntennaService.GetListAsync();
+            if (result.Success)
             {
-                Connection();
+                var list = result.Data.ToList();
+                fAntennaList = list.ToList();
 
+
+                ConnectionAsync();
+
+                fIsInventoryScan = true;
+                //}
+
+                flashmix_G2();
+                //if (fCmdRet == 30 || fCmdRet == 48 || fCmdRet == 55)
+                //{
+                //    ConnectionAsync();
+
+                //    fIsInventoryScan = true;
+                //    //}
+
+                //    flashmix_G2();
+
+                //    //await DisConnectAsync();
+                   
+                //}
+                //else
+                //{
+                   
+                //}
+
+
+                // return Task.FromResult(true);
             }
-            NewInventory();
-            DisConnect();
-            return Task.FromResult(true);
         }
 
         public async Task<ApiResponse> StartRead2Async()
@@ -338,7 +431,7 @@ namespace IMAOCMS.API.Business
             {
                 //NewInventory();
                 //DisConnect ();
-                var sss = await ConStartAndStopAndClose();
+                 await ConStartAndStopAndClose();
 
 
                 //await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
@@ -357,76 +450,90 @@ namespace IMAOCMS.API.Business
         byte ReadMem = 0;
         byte[] antlist = new byte[16];
         int AntennaNum = 16;
-        private void NewInventory()
+        private async void NewInventory()
         {
-            Array.Clear(antlist, 0, 16);
+            //Array.Clear(antlist, 0, 16);
 
-            antlist[0] = 1;
-            InAnt = 0x80;
+            //antlist[0] = 1;
+            //InAnt = 0x80;
 
-            antlist[1] = 1;
-            InAnt = 0x81;
+            //antlist[1] = 1;
+            //InAnt = 0x81;
 
-            antlist[2] = 1;
-            InAnt = 0x82;
+            //antlist[2] = 1;
+            //InAnt = 0x82;
 
-            antlist[3] = 1;
-            InAnt = 0x83;
+            //antlist[3] = 1;
+            //InAnt = 0x83;
 
-            antlist[4] = 1;
-            InAnt = 0x84;
+            //antlist[4] = 1;
+            //InAnt = 0x84;
 
-            antlist[5] = 1;
-            InAnt = 0x85;
+            //antlist[5] = 1;
+            //InAnt = 0x85;
 
-            antlist[6] = 1;
-            InAnt = 0x86;
+            //antlist[6] = 1;
+            //InAnt = 0x86;
 
-            antlist[7] = 1;
-            InAnt = 0x87;
+            //antlist[7] = 1;
+            //InAnt = 0x87;
 
-            antlist[8] = 1;
-            InAnt = 0x88;
+            //antlist[8] = 1;
+            //InAnt = 0x88;
 
-            antlist[9] = 1;
-            InAnt = 0x89;
+            //antlist[9] = 1;
+            //InAnt = 0x89;
 
-            antlist[10] = 1;
-            InAnt = 0x8A;
+            //antlist[10] = 1;
+            //InAnt = 0x8A;
 
-            antlist[11] = 1;
-            InAnt = 0x8B;
+            //antlist[11] = 1;
+            //InAnt = 0x8B;
 
-            antlist[12] = 1;
-            InAnt = 0x8C;
+            //antlist[12] = 1;
+            //InAnt = 0x8C;
 
-            antlist[13] = 1;
-            InAnt = 0x8D;
+            //antlist[13] = 1;
+            //InAnt = 0x8D;
 
-            antlist[14] = 1;
-            InAnt = 0x8E;
-
-
-
-            antlist[15] = 1;
-            InAnt = 0x8F;
+            //antlist[14] = 1;
+            //InAnt = 0x8E;
 
 
-            for (int m = 0; m < AntennaNum; m++)
-            {
-                InAnt = (byte)(m | 0x80);
-                FastFlag = 1;
-                if (antlist[m] == 1)
-                {
 
-                    flashmix_G2();
+            //antlist[15] = 1;
+            //InAnt = 0x8F;
 
-                }
-            }
+            //for (int m = 0; m < fAntennaList.Count(); m++)
+            //{
+            //    InAnt = (byte)(m | 0x80);
+            //    FastFlag = 1;
+            //    if (fAntennaList[m].IsActive == true)
+            //    {
+            //        //_logger.LogInformation("Anten Döngü" + InAnt.ToString());
+            //        flashmix_G2();
+
+            //    }
+            //}
+
+            //for (int m = 0; m < AntennaNum; m++)
+            //{
+            //    InAnt = (byte)(m | 0x80);
+            //    FastFlag = 1;
+            //    if (antlist[m] == 1)
+            //    {
+            //        flashmix_G2();
+            //    }
+            //}
+            //if (fIsInventoryScan == true)
+            //{
+
+            //}
+            flashmix_G2();
         }
 
 
-        private void flashmix_G2()
+        private async void flashmix_G2()
         {
             
 
@@ -434,11 +541,6 @@ namespace IMAOCMS.API.Business
             ReadAdr = HexStringToByteArray("0002");
             ReadLen = Convert.ToByte("06", 16);
             Psd = HexStringToByteArray("00000000");
-
-
-
-
-
 
             byte Ant = 0;
             int TagNum = 0;
@@ -450,108 +552,101 @@ namespace IMAOCMS.API.Business
             byte[] MaskData = new byte[100];
             byte MaskFlag = 0;
             MaskFlag = 0;
-            int cbtime = System.Environment.TickCount;
+            // int cbtime = System.Environment.TickCount;
             CardNum = 0;
-            try
-            {
-                if(fCmdRet!=48)
-                fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex);
-            }
-            catch (Exception)
-            {
 
-            }
-
-            int cmdTime = System.Environment.TickCount - cbtime;//命令时间
-
-            if (CardNum == 0)
-            {
-                if (Session > 1)
-                    AA_times = AA_times + 1;//没有得到标签只更新状态栏
-            }
-            else
-                AA_times = 0;
-
-            
-
-            //if ((fCmdRet == 1) || (fCmdRet == 2) || (fCmdRet == 0xFB) || (fCmdRet == 0x26))
+            //var result = await Task.Run(() => fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex));
+            //if (fCmdRet==0)
             //{
+            //    await Task.Delay(50);
+            //}
 
-            //    var dsa = ByteToHex(EPC);
+            for (int m = 0; m < fAntennaList.Count(); m++)
+            {
+                FastFlag = 1;
+                try
+                {
+                    if (fAntennaList[m].IsActive == true)
+                    {
+                        InAnt = 0x80;
+                        Ant = Convert.ToByte(fAntennaList[m].Antenna);
+                        switch (Ant)
+                        {
+                            case 1:
+                                InAnt = 0x80;
+                                break;
+                            case 2:
+                                InAnt = 0x81;
+                                break;
+                            case 3:
+                                InAnt = 0x82;
+                                break;
+                            case 4:
+                                InAnt = 0x83;
+                                break;
+                            case 5:
+                                InAnt = 0x84;
+                                break;
+                            case 6:
+                                InAnt = 0x85;
+                                break;
+                            case 7:
+                                InAnt = 0x86;
+                                break;
+                            case 8:
+                                InAnt = 0x87;
+                                break;
+                            case 9:
+                                InAnt = 0x88;
+                                break;
+                            case 10:
+                                InAnt = 0x89;
+                                break;
+                            case 11:
+                                InAnt = 0x8A;
+                                break;
+                            case 12:
+                                InAnt = 0x8B;
+                                break;
+                            case 13:
+                                InAnt = 0x8C;
+                                break;
+                            case 14:
+                                InAnt = 0x8D;
+                                break;
+                            case 15:
+                                InAnt = 0x8E;
+                                break;
+                        }
+                        //_logger.LogInformation("Anten Döngü" + InAnt.ToString());
+                        if (fCmdRet != 48 || fCmdRet != 55)
+                             fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex);
 
-            //    var sada = HexToByte(dsa);
+
+                    }
 
 
+                }
+                catch (Exception)
+                {
+
+                }
+            }
+             //fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
 
 
-
-
-
-            //    //if (cmdTime > CommunicationTime)
-            //    //    cmdTime = cmdTime - CommunicationTime;//减去通讯时间等于标签的实际时间
-            //    //if (cmdTime > 0)
-            //    //{
-            //    //    //int tagrate = (CardNum * 1000) / cmdTime;//速度等于张数/时间
-            //    //    //IntPtr ptrWnd = IntPtr.Zero;
-            //    //    //ptrWnd = FindWindow(null, "UHFReader288 Demo V5.0"); //0x00060f1a
-            //    //    //if (ptrWnd != IntPtr.Zero)         // 检查当前统计窗口是否打开
-            //    //    //{
-            //    //    //    string para = tagrate.ToString() + "," + total_tagnum.ToString() + "," + cmdTime.ToString();
-            //    //    //    SendMessage(ptrWnd, WM_SENDTAGSTAT, IntPtr.Zero, para);
-            //    //    //}
-            //    //}
+          
+            //try
+            //{
+            //    if (fCmdRet != 48 || fCmdRet != 55)
+            //        await Task.Run(() => fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex));
+            //    await Task.Delay(150);
 
             //}
-            //IntPtr ptrWnd1 = IntPtr.Zero;
-            //ptrWnd1 = FindWindow(null, "UHFReader288 Demo V5.0");
-            //if (ptrWnd1 != IntPtr.Zero)         // 检查当前统计窗口是否打开
+            //catch (Exception)
             //{
-            //    string para = fCmdRet.ToString();
-            //    SendMessage(ptrWnd1, WM_SENDSTATU, IntPtr.Zero, para);
-            //}
-            //ptrWnd1 = IntPtr.Zero;
+
         }
-
-        public string[] EpcStr = new string[7];
-        private void EpcReader(byte[] Epcrecebuffer)
-        {
-            string str;
-            int i;
-            str = "";
-            //okuma sayısı
-            for (i = 0; i < 5; i++)
-            {
-                str += (char)Epcrecebuffer[i];
-            }
-            EpcStr[3] = str;
-            //Anten numarası
-            str = "";
-            for (i = 0; i < 2; i++)
-            {
-                str += (char)Epcrecebuffer[0x07 + i];
-            }
-            EpcStr[4] = str;
-            //etiket türü
-            str = "";
-            for (i = 0; i < 2; i++)
-            {
-                str += (char)Epcrecebuffer[0x0b + i];
-            }
-            EpcStr[5] = str;
-            //EPC
-            str = "";
-            for (i = 0; i < 74; i++)
-            {
-                str += (char)Epcrecebuffer[0x0f + i];
-            }
-            EpcStr[6] = str.Trim();
-        }
-
-
-
-
-
-
 
 
 

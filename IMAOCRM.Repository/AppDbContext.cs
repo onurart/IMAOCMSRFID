@@ -26,7 +26,8 @@ namespace IMAOCRM.Repository
         public DbSet<User> Users { get; set; }
         public DbSet<EpcReadData> EpcReadDatas { get; set; }
         public DbSet<EPCReadTemp> EPCReadTemps { get; set; }
-
+        public DbSet<RFIDDevice> RFIDDevices { get; set; }
+        public DbSet<RFIDDeviceAntenna> RFIDDeviceAntennas { get; set; }
         public override int SaveChanges()
         {
             foreach (var item in ChangeTracker.Entries())

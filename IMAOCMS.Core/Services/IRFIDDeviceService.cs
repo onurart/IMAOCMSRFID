@@ -1,6 +1,5 @@
 ﻿using IMAOCMS.Core.Entites;
-
 namespace IMAOCMS.Core.Services;
-public interface IEpcReadDataService : IServices<EpcReadData>
+public interface IRFIDDeviceService:IServices<RFIDDevice>
 {
 }

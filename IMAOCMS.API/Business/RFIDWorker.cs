@@ -29,6 +29,7 @@ namespace IMAOCMS.API.Business
                 while (_disposed)
                 {
                     //await _chafone718Service.StartEpcReader();
+                    //Task.Delay(1000).Wait();
                    var sss= await _chafone718Service.StartRead2Async();
                     
                 }
