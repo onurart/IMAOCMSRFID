@@ -8,6 +8,7 @@ using IMAOCMS.Core.Request;
 using IMAOCMS.Core.Services;
 using Mapster;
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -140,7 +141,45 @@ namespace IMAOCMS.API.Business
 
 
         }
+        public async Task<ApiDataListResponse<RFIDDeviceAntennaDto>> GetAntennaPower()
+        {
+            byte[] powerDbm = new byte[16];
+            int length = 0;
+            var resultes = await _rfidDeviceAntennaService.GetAllAsync();
+            List<RFIDDeviceAntennaDto> rFIDDeviceAntennalist = new();
+            rFIDDeviceAntennalist.Adapt(resultes);
+            var result = fCmdRet = RWDev.GetAntennaPower(ref fComAdr, powerDbm, ref length, frmcomportindex);
+            if (fCmdRet != 0)
+            {
+                string strLog = "Get Power failed： " + GetReturnCodeDesc(fCmdRet);
+                _logger.LogError("GetPower : " + strLog);
+                return await Task.FromResult(new ApiDataListResponse<RFIDDeviceAntennaDto>() { Message = GetReturnCodeDesc(fCmdRet), Status = false });
+            }
+            else
+            {
 
+                foreach (var item in resultes)
+                {
+                    rFIDDeviceAntennalist.Add(new RFIDDeviceAntennaDto 
+                    {
+                        RFIDDeviceId = item.RFIDDeviceId, 
+                        Antenna = item.Antenna, 
+                        AntennaPower = 
+                        item.Antenna == 1 ? powerDbm[0] :
+                        item.Antenna == 2 ? powerDbm[1]:
+                        item.Antenna == 3 ? powerDbm[2]: 
+                        item.Antenna == 4 ? powerDbm[3]: 
+                        item.Antenna == 5 ? powerDbm[4]:
+                        item.Antenna == 6 ? powerDbm[5]:
+                        item.Antenna == 7 ? powerDbm[6]:
+                        item.Antenna == 8 ? powerDbm[7]:0
+                    });
+                } 
+                string strLog = "Get Power success ";
+                _logger.LogTrace("GetPower : " + strLog);
+                return await Task.FromResult(new ApiDataListResponse<RFIDDeviceAntennaDto>() { Data = rFIDDeviceAntennalist, Message = GetReturnCodeDesc(fCmdRet), Status = true });
+            }
+        }
         public async Task<ApiResponse> StartReadAsync()
         {
 
@@ -195,7 +234,7 @@ namespace IMAOCMS.API.Business
 
                 if (EpcData.Count != 0)
                 {
-                    foreach (var item in EpcData)
+                    foreach (var item in EpcData.Distinct())
                     {
                         EpcReadData epcReadData = new EpcReadData
                         {
@@ -299,7 +338,7 @@ namespace IMAOCMS.API.Business
             //    fBaud = Convert.ToByte(fBaud + 2);
             fComAdr = 255;//广播地址打开设备
 
-            var result =  fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
+            var result = fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
             if (result != 0)
 
             //fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
@@ -351,11 +390,11 @@ namespace IMAOCMS.API.Business
                 //    flashmix_G2();
 
                 //    //await DisConnectAsync();
-                   
+
                 //}
                 //else
                 //{
-                   
+
                 //}
 
 
@@ -431,7 +470,7 @@ namespace IMAOCMS.API.Business
             {
                 //NewInventory();
                 //DisConnect ();
-                 await ConStartAndStopAndClose();
+                await ConStartAndStopAndClose();
 
 
                 //await Task.Run(() => fCmdRet = RWDev.CloseSpecComPort(frmcomportindex));
@@ -535,7 +574,7 @@ namespace IMAOCMS.API.Business
 
         private async void flashmix_G2()
         {
-            
+
 
             ReadMem = (byte)1;
             ReadAdr = HexStringToByteArray("0002");
@@ -620,7 +659,7 @@ namespace IMAOCMS.API.Business
                         }
                         //_logger.LogInformation("Anten Döngü" + InAnt.ToString());
                         if (fCmdRet != 48 || fCmdRet != 55)
-                             fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex);
+                            fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex);
 
 
                     }
@@ -632,10 +671,10 @@ namespace IMAOCMS.API.Business
 
                 }
             }
-             //fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
+            //fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
 
 
-          
+
             //try
             //{
             //    if (fCmdRet != 48 || fCmdRet != 55)

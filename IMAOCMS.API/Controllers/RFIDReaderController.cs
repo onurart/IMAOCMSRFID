@@ -111,4 +111,21 @@ public class RFIDReaderController : CustomBaseController
             return BadRequest(new ApiResponse() { Message = "Hata" + " - " + ex.ToString(), Status = false });
         }
     }
+    [HttpGet]
+    [Route("[action]")]
+    public async Task<IActionResult> GetAntennaPower()
+    {
+        try
+        {
+            var result = await _service.GetAntennaPower();
+            if (result.Status)
+                return Ok(result);
+            else
+                return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse() { Message = "Hata" + " - " + ex.ToString(), Status = false });
+        }
+    }
 }
