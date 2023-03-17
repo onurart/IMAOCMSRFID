@@ -165,7 +165,7 @@ namespace IMAOCMS.API.Business
                         RFIDDeviceId = item.RFIDDeviceId, 
                         Antenna = item.Antenna, 
                         AntennaPower = 
-                        item.Antenna == 1 ? powerDbm[0] :
+                        item.Antenna == 1 ? powerDbm[0]:
                         item.Antenna == 2 ? powerDbm[1]:
                         item.Antenna == 3 ? powerDbm[2]: 
                         item.Antenna == 4 ? powerDbm[3]: 
