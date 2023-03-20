@@ -10,6 +10,9 @@ namespace IMAOCRM.Service.Mapping
         {
             CreateMap<RFIDDevice, RFIDDeviceDto>().ReverseMap();
             CreateMap<RFIDDevice, RFIDDeviceDto>();
+
+            CreateMap<EpcReadData, EpcReadDataDto>().ReverseMap();
+            CreateMap<EpcReadData, EpcReadDataDto>();
         } 
     }
 }
