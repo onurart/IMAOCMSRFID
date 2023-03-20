@@ -5,10 +5,13 @@ using IMAOCMS.API.Filters;
 using IMAOCMS.API.Modules;
 using IMAOCRM.Repository;
 using IMAOCRM.Service.Mapping;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using NLog;
 using NLog.Web;
 using System;
+using System.Text;
 
 var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
 logger.Debug("init main");
@@ -33,6 +36,34 @@ try
     //builder.Services.AddHostedService(op => op.GetRequiredService<RFIDWorker>());
     builder.Logging.ClearProviders();
     builder.WebHost.UseNLog();
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("EnableCORS", build =>
+        {
+            build.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        });
+    });
+    builder.Services.AddAuthentication(opt =>
+    {
+        opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    }).AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = "https://localhost:7091",
+            ValidAudience = "https://localhost:7091",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("superSecretKey@345"))
+        };
+    });
+
+
     var app = builder.Build();
     using (var context = new AppDbContext()) { context.Database.Migrate(); }
     // Configure the HTTP request pipeline.
@@ -43,7 +74,8 @@ try
     }
 
     app.UseHttpsRedirection();
-
+    app.UseCors("EnableCORS");
+    app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
