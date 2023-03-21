@@ -1,9 +1,11 @@
 ﻿using IMAOCMS.API.Business.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IMAOCMS.API.Controllers
 {
     [Route("/api/[action]")]
+    [Authorize]
     public class RfidReaderController : CustomBaseController
     {
         private readonly IRfidReaderService _service;

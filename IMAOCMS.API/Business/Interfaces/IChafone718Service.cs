@@ -8,6 +8,9 @@ public interface IChafone718Service
     Task<ApiResponse> ConnectionDeviceAsync(RFIDDeviceDto rFIDDevice);
     Task<ApiResponse> DisconnectDeviceAsync();
     Task<ApiDataListResponse<RFIDDeviceAntennaDto>> GetAntennaPower();
+    Task<ApiDataResponse<RFIDDeviceAntennaDto>> SetAntennaPower(RFIDDeviceAntennaDto antennaDto);
+    Task<ApiDataResponse<RFIDDeviceTemparatureDto>> GetTemparature();
+    Task<ApiDataResponse<RFIDDeviceMeasuringAPDto>> GetAntennaLostDb(RFIDDeviceMeasuringAPDto measuringAntennaPortsDto);
     Task<ApiResponse> StartReadAsync();
     Task<ApiResponse> StartRead2Async();
     Task<ApiResponse> StopReadAsync();

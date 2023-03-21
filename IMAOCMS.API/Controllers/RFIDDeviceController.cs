@@ -78,7 +78,6 @@ public class RFIDDeviceController : CustomBaseController
         }
     }
     [HttpPost]
-    [Route("[action]")]
     public async Task<IActionResult> StartRead()
     {
         try
@@ -95,7 +94,6 @@ public class RFIDDeviceController : CustomBaseController
         }
     }
     [HttpGet]
-    [Route("[action]")]
     public async Task<IActionResult> StopRead()
     {
         try
@@ -112,12 +110,59 @@ public class RFIDDeviceController : CustomBaseController
         }
     }
     [HttpGet]
-    [Route("[action]")]
     public async Task<IActionResult> GetAntennaPower()
     {
         try
         {
             var result = await _service.GetAntennaPower();
+            if (result.Status)
+                return Ok(result);
+            else
+                return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse() { Message = "Hata" + " - " + ex.ToString(), Status = false });
+        }
+    }
+    [HttpPut]
+    public async Task<IActionResult> SetAntennaPower(RFIDDeviceAntennaDto antennaDto)
+    {
+        try
+        {
+            var result = await _service.SetAntennaPower(antennaDto);
+            if (result.Status)
+                return Ok(result);
+            else
+                return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse() { Message = "Hata" + " - " + ex.ToString(), Status = false });
+        }
+    }
+    [HttpGet]
+    public async Task<IActionResult> GetAntennaTemparature()
+    {
+        try
+        {
+            var result = await _service.GetTemparature();
+            if (result.Status)
+                return Ok(result);
+            else
+                return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse() { Message = "Hata" + " - " + ex.ToString(), Status = false });
+        }
+    }
+    [HttpGet]
+    public async Task<IActionResult> GetAntennaMeasuringLost([FromQuery]RFIDDeviceMeasuringAPDto measuringAntennaPortsDto)
+    {
+        try
+        {
+            var result = await _service.GetAntennaLostDb(measuringAntennaPortsDto);
             if (result.Status)
                 return Ok(result);
             else
