@@ -254,7 +254,7 @@ public class Chafone718Service : IChafone718Service
     public async Task<ApiDataResponse<RFIDDeviceMeasuringAPDto>> GetAntennaLostDb(RFIDDeviceMeasuringAPDto measuringAntennaPortsDto)
     {
 
-        int AntenIndex = measuringAntennaPortsDto.Antenna == 2 ? 1 : measuringAntennaPortsDto.Antenna == 3 ? 2 : measuringAntennaPortsDto.Antenna == 4 ? 3 : measuringAntennaPortsDto.Antenna == 5 ? 4 : measuringAntennaPortsDto.Antenna == 6 ? 5 : measuringAntennaPortsDto.Antenna == 7 ? 6 : measuringAntennaPortsDto.Antenna == 8 ? 7 : 1;
+        int AntenIndex = measuringAntennaPortsDto.Antenna == 2 ? 1 : measuringAntennaPortsDto.Antenna == 3 ? 2 : measuringAntennaPortsDto.Antenna == 4 ? 3 : measuringAntennaPortsDto.Antenna == 5 ? 4 : measuringAntennaPortsDto.Antenna == 6 ? 5 : measuringAntennaPortsDto.Antenna == 7 ? 6 : measuringAntennaPortsDto.Antenna == 8 ? 7 : 0;
         byte[] TestFreq = new byte[4];
         byte Ant = (byte)AntenIndex;
         byte ReturnLoss = 0;
