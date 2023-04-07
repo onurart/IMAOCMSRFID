@@ -151,7 +151,7 @@ public class RelayCardService : IRelayCardService
                     _serialPort.Close();
 
                     
-                    if(keys.get.FirstOrDefault(x=>x.Value==1))
+                    //if(keys.get.FirstOrDefault(x=>x.Value==1))
 
                     if (keys.ContainsKey(1).Equals(0))
                     {
