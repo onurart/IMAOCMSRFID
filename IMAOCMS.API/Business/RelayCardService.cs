@@ -2,6 +2,7 @@
 using IMAOCMS.Core.Common.Responses;
 using IMAOCMS.Core.DTOs;
 using IMAOCMS.Core.SanwoRelay;
+using IMAOCMS.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Drawing;
 using System.IO.Ports;
@@ -10,15 +11,18 @@ namespace IMAOCMS.API.Business;
 public class RelayCardService : IRelayCardService
 {
     private readonly ILogger<RelayCardService> _logger;
+    private readonly IChafone718Service _chafone718Service;
     // private readonly IRelayCardService _service;
     private static SerialPort _serialPort;
     public int devAddr = 1;
     public int inCount = 3;
     public double readinterval = 1.0;
-    public RelayCardService(ILogger<RelayCardService> logger)
+    public RelayCardService(ILogger<RelayCardService> logger, IChafone718Service chafone718Service)
     {
         _logger = logger;
-      
+        _chafone718Service = chafone718Service;
+
+
         //_service = service;
     }
     public async Task<ApiResponse> ConnectionRelayAsync(RelayCardDeviceDto deviceDto)
@@ -75,7 +79,7 @@ public class RelayCardService : IRelayCardService
     }
     private Dictionary<int, int> ReadStatus()
     {
-        Dictionary<int, int> keys= new Dictionary<int, int>();
+        Dictionary<int, int> keys = new Dictionary<int, int>();
         try
         {
             Queue<string> stringQueue = new Queue<string>();
@@ -87,34 +91,99 @@ public class RelayCardService : IRelayCardService
             stringQueue.Enqueue(str2);
             //while (true)
             //{
-                try
+            try
+            {
+                if (_serialPort.IsOpen)
                 {
-                    if (_serialPort.IsOpen)
+                    string hexString = stringQueue.Dequeue();
+                    stringQueue.Enqueue(hexString);
+                    byte[] toHexByte = GlobalClass.strToToHexByte("01020000000879CC");
+                    //byte[] toHexByte = GlobalClass.strToToHexByte("0101000000083DCC");
+                    _serialPort.Write(toHexByte, 0, toHexByte.Length);
+                    Thread.Sleep(100);
+                    if (_serialPort.BytesToRead > 0)
                     {
-                        string hexString = stringQueue.Dequeue();
-                        stringQueue.Enqueue(hexString);
-                        byte[] toHexByte = GlobalClass.strToToHexByte("01020000000879CC");
-                        //byte[] toHexByte = GlobalClass.strToToHexByte("0101000000083DCC");
-                        _serialPort.Write(toHexByte, 0, toHexByte.Length);
-                        Thread.Sleep(100);
-                        if (_serialPort.BytesToRead > 0)
-                        {
-                            byte[] numArray = new byte[_serialPort.BytesToRead];
-                            _serialPort.Read(numArray, 0, numArray.Length);
-                            keys= AnalyzeData(toHexByte, numArray);
-                        }
+                        byte[] numArray = new byte[_serialPort.BytesToRead];
+                        _serialPort.Read(numArray, 0, numArray.Length);
+                        keys = AnalyzeData(toHexByte, numArray);
                     }
                 }
-                catch
-                {
-                }
-                //Thread.Sleep(TimeSpan.FromSeconds(this.readinterval));
+            }
+            catch
+            {
+            }
+            //Thread.Sleep(TimeSpan.FromSeconds(this.readinterval));
             //}
         }
-        catch(Exception e)
+        catch (Exception e)
         {
 
         }
+        return keys;
+    }
+    private async Task<Dictionary<int, int>> ReadStatusWork()
+    {
+        Dictionary<int, int> keys = new Dictionary<int, int>();
+        // RelayCardDeviceDto deviceDto
+        try
+        {
+            _serialPort = new SerialPort()
+            {
+                PortName = "COM9",
+                BaudRate = 9600,
+                Parity = Parity.None,
+                DataBits = 8,
+                //StopBits = StopBits.None
+            };
+            if (!_serialPort.IsOpen)
+                _serialPort.Open();
+            if (_serialPort.IsOpen)
+            {
+                byte[] toHexByte = GlobalClass.strToToHexByte("01020000000879CC");
+                //byte[] toHexByte = GlobalClass.strToToHexByte("0101000000083DCC");
+                _serialPort.Write(toHexByte, 0, toHexByte.Length);
+                Thread.Sleep(100);
+                if (_serialPort.BytesToRead > 0)
+                {
+                    byte[] numArray = new byte[_serialPort.BytesToRead];
+                    _serialPort.Read(numArray, 0, numArray.Length);
+                    keys = AnalyzeData(toHexByte, numArray);
+                    _serialPort.Close();
+
+                    
+                    if(keys.get.FirstOrDefault(x=>x.Value==1))
+
+                    if (keys.ContainsKey(1).Equals(0))
+                    {
+                        if (keys.ContainsValue(0))
+                        {
+                            using HttpClient httpClient = new();
+                            string baseurl = "https://localhost:7091/api/";
+                            var response = await httpClient.GetFromJsonAsync<ApiResponse>(baseurl + "StopEpcReader");
+                        }
+                        else
+                        {
+                            using HttpClient httpClient = new();
+                            string baseurl = "https://localhost:7091/api/";
+                            var response = await httpClient.GetFromJsonAsync<ApiResponse>(baseurl + "StartEpcReader");
+                        }
+
+                    }
+                    else if (keys.ContainsKey(1) == keys.ContainsValue(1))
+                    {
+
+                    }
+
+
+                }
+            }
+        }
+        catch
+        {
+        }
+
+
+
         return keys;
     }
     private Dictionary<int, int> AnalyzeData(byte[] sendBuff, byte[] recBuff)
@@ -160,69 +229,69 @@ public class RelayCardService : IRelayCardService
 
             if (dic.ContainsKey(1))
 
-               // btnX1.BackColor = Color.Green;
-            if (dic.ContainsKey(2))
-               // btnX2.BackColor = Color.Green;
-            if (dic.ContainsKey(3))
-              //  btnX3.BackColor = Color.Green;
-            if (dic.ContainsKey(4))
-              //  btnX4.BackColor = Color.Green;
-            if (dic.ContainsKey(5))
-              //  btnX5.BackColor = Color.Green;
-            if (dic.ContainsKey(6))
-              //  btnX6.BackColor = Color.Green;
-            if (dic.ContainsKey(7))
-              //  btnX7.BackColor = Color.Green;
-            if (dic.ContainsKey(8))
-              //  btnX8.BackColor = Color.Green;
-            if (dic.ContainsKey(9))
-                //this.SetImage(this.in9, dic[9], true);
-                if (dic.ContainsKey(10))
-                    //this.SetImage(this.in10, dic[10], true);
-                    if (dic.ContainsKey(11))
-                        //this.SetImage(this.in11, dic[11], true);
-                        if (dic.ContainsKey(12))
-                            //this.SetImage(this.in12, dic[12], true);
-                            if (dic.ContainsKey(13))
-                                //this.SetImage(this.in13, dic[13], true);
-                                if (dic.ContainsKey(14))
-                                    //this.SetImage(this.in14, dic[14], true);
-                                    if (dic.ContainsKey(15))
-                                        //this.SetImage(this.in15, dic[15], true);
-                                        if (dic.ContainsKey(16))
-                                            //this.SetImage(this.in16, dic[16], true);
-                                            if (dic.ContainsKey(17))
-                                                //this.SetImage(this.in17, dic[17], true);
-                                                if (dic.ContainsKey(18))
-                                                    //this.SetImage(this.in18, dic[18], true);
-                                                    if (dic.ContainsKey(19))
-                                                        //this.SetImage(this.in19, dic[19], true);
-                                                        if (dic.ContainsKey(20))
-                                                            //this.SetImage(this.in20, dic[20], true);
-                                                            if (dic.ContainsKey(21))
-                                                                //this.SetImage(this.in21, dic[21], true);
-                                                                if (dic.ContainsKey(22))
-                                                                    //this.SetImage(this.in22, dic[22], true);
-                                                                    if (dic.ContainsKey(23))
-                                                                        //this.SetImage(this.in23, dic[23], true);
-                                                                        if (dic.ContainsKey(24))
-                                                                            //this.SetImage(this.in24, dic[24], true);
-                                                                            if (dic.ContainsKey(25))
-                                                                                //this.SetImage(this.in25, dic[25], true);
-                                                                                if (dic.ContainsKey(26))
-                                                                                    //this.SetImage(this.in26, dic[26], true);
-                                                                                    if (dic.ContainsKey(27))
-                                                                                        //this.SetImage(this.in27, dic[27], true);
-                                                                                        if (dic.ContainsKey(28))
-                                                                                            //this.SetImage(this.in28, dic[28], true);
-                                                                                            if (dic.ContainsKey(29))
-                                                                                                //this.SetImage(this.in29, dic[29], true);
-                                                                                                if (dic.ContainsKey(30))
-                                                                                                    //this.SetImage(this.in30, dic[30], true);
-                                                                                                    if (dic.ContainsKey(31))
-                                                                                                        //this.SetImage(this.in31, dic[31], true);
-                                                                                                        if (!dic.ContainsKey(32))
-                                                                                                            return;
+                // btnX1.BackColor = Color.Green;
+                if (dic.ContainsKey(2))
+                    // btnX2.BackColor = Color.Green;
+                    if (dic.ContainsKey(3))
+                        //  btnX3.BackColor = Color.Green;
+                        if (dic.ContainsKey(4))
+                            //  btnX4.BackColor = Color.Green;
+                            if (dic.ContainsKey(5))
+                                //  btnX5.BackColor = Color.Green;
+                                if (dic.ContainsKey(6))
+                                    //  btnX6.BackColor = Color.Green;
+                                    if (dic.ContainsKey(7))
+                                        //  btnX7.BackColor = Color.Green;
+                                        if (dic.ContainsKey(8))
+                                            //  btnX8.BackColor = Color.Green;
+                                            if (dic.ContainsKey(9))
+                                                //this.SetImage(this.in9, dic[9], true);
+                                                if (dic.ContainsKey(10))
+                                                    //this.SetImage(this.in10, dic[10], true);
+                                                    if (dic.ContainsKey(11))
+                                                        //this.SetImage(this.in11, dic[11], true);
+                                                        if (dic.ContainsKey(12))
+                                                            //this.SetImage(this.in12, dic[12], true);
+                                                            if (dic.ContainsKey(13))
+                                                                //this.SetImage(this.in13, dic[13], true);
+                                                                if (dic.ContainsKey(14))
+                                                                    //this.SetImage(this.in14, dic[14], true);
+                                                                    if (dic.ContainsKey(15))
+                                                                        //this.SetImage(this.in15, dic[15], true);
+                                                                        if (dic.ContainsKey(16))
+                                                                            //this.SetImage(this.in16, dic[16], true);
+                                                                            if (dic.ContainsKey(17))
+                                                                                //this.SetImage(this.in17, dic[17], true);
+                                                                                if (dic.ContainsKey(18))
+                                                                                    //this.SetImage(this.in18, dic[18], true);
+                                                                                    if (dic.ContainsKey(19))
+                                                                                        //this.SetImage(this.in19, dic[19], true);
+                                                                                        if (dic.ContainsKey(20))
+                                                                                            //this.SetImage(this.in20, dic[20], true);
+                                                                                            if (dic.ContainsKey(21))
+                                                                                                //this.SetImage(this.in21, dic[21], true);
+                                                                                                if (dic.ContainsKey(22))
+                                                                                                    //this.SetImage(this.in22, dic[22], true);
+                                                                                                    if (dic.ContainsKey(23))
+                                                                                                        //this.SetImage(this.in23, dic[23], true);
+                                                                                                        if (dic.ContainsKey(24))
+                                                                                                            //this.SetImage(this.in24, dic[24], true);
+                                                                                                            if (dic.ContainsKey(25))
+                                                                                                                //this.SetImage(this.in25, dic[25], true);
+                                                                                                                if (dic.ContainsKey(26))
+                                                                                                                    //this.SetImage(this.in26, dic[26], true);
+                                                                                                                    if (dic.ContainsKey(27))
+                                                                                                                        //this.SetImage(this.in27, dic[27], true);
+                                                                                                                        if (dic.ContainsKey(28))
+                                                                                                                            //this.SetImage(this.in28, dic[28], true);
+                                                                                                                            if (dic.ContainsKey(29))
+                                                                                                                                //this.SetImage(this.in29, dic[29], true);
+                                                                                                                                if (dic.ContainsKey(30))
+                                                                                                                                    //this.SetImage(this.in30, dic[30], true);
+                                                                                                                                    if (dic.ContainsKey(31))
+                                                                                                                                        //this.SetImage(this.in31, dic[31], true);
+                                                                                                                                        if (!dic.ContainsKey(32))
+                                                                                                                                            return;
             //this.SetImage(this.in32, dic[32], true);
 
         }
@@ -382,7 +451,13 @@ public class RelayCardService : IRelayCardService
 
     public async Task<ApiDicListResponse> ReadStatusAsync()
     {
-        var result= ReadStatus();
-        return await Task.FromResult(new ApiDicListResponse() {Data=result, Message = _serialPort.IsOpen.ToString(), Status = true });
+        var result = ReadStatus();
+        return await Task.FromResult(new ApiDicListResponse() { Data = result, Message = _serialPort.IsOpen.ToString(), Status = true });
+    }
+
+    public async Task<ApiDicListResponse> ReadStatusWorkAsync()
+    {
+        var result = await ReadStatusWork();
+        return await Task.FromResult(new ApiDicListResponse() { Data = result, Message = _serialPort.IsOpen.ToString(), Status = true });
     }
 }

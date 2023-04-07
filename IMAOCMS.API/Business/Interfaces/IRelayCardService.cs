@@ -7,4 +7,5 @@ public interface IRelayCardService
     Task<ApiResponse> DisconnectRelayAsync();
     Task<ApiResponse> SetOut(string Outs);
     Task<ApiDicListResponse> ReadStatusAsync();
+    Task<ApiDicListResponse> ReadStatusWorkAsync();
 }

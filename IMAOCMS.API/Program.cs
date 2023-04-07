@@ -33,6 +33,7 @@ try
 
 
     builder.Services.AddSingleton<RFIDWorker>();
+    builder.Services.AddSingleton<RelayWorker>();
     //builder.Services.AddHostedService(op => op.GetRequiredService<RFIDWorker>());
     builder.Logging.ClearProviders();
     builder.WebHost.UseNLog();
@@ -91,6 +92,13 @@ try
     app.MapGet("api/StartEpcReader", async (ILoggerFactory loggerFactory, IServiceProvider serviceProvider) =>
     {
         var timer2Service = serviceProvider.GetRequiredService<RFIDWorker>();
+        await timer2Service.StartAsync(CancellationToken.None);
+        return "success";
+    });
+
+    app.MapGet("api/StartRelayCard", async (ILoggerFactory loggerFactory, IServiceProvider serviceProvider) =>
+    {
+        var timer2Service = serviceProvider.GetRequiredService<RelayWorker>();
         await timer2Service.StartAsync(CancellationToken.None);
         return "success";
     });
