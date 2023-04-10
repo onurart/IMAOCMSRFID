@@ -150,29 +150,41 @@ public class RelayCardService : IRelayCardService
                     keys = AnalyzeData(toHexByte, numArray);
                     _serialPort.Close();
 
-                    
-                    //if(keys.get.FirstOrDefault(x=>x.Value==1))
 
-                    if (keys.ContainsKey(1).Equals(0))
+                    //if(keys.get.FirstOrDefault(x=>x.Value==1))
+                    var sdsa = keys.ContainsValue(0);
+                    foreach (var key in keys)
                     {
-                        if (keys.ContainsValue(0))
+                        if (key.Key == 1 && key.Value == 0)
                         {
-                            using HttpClient httpClient = new();
-                            string baseurl = "https://localhost:7091/api/";
-                            var response = await httpClient.GetFromJsonAsync<ApiResponse>(baseurl + "StopEpcReader");
+                            await _chafone718Service.StartRead2Async();
                         }
                         else
                         {
-                            using HttpClient httpClient = new();
-                            string baseurl = "https://localhost:7091/api/";
-                            var response = await httpClient.GetFromJsonAsync<ApiResponse>(baseurl + "StartEpcReader");
+                            await _chafone718Service.StopReadAsync();
                         }
-
                     }
-                    else if (keys.ContainsKey(1) == keys.ContainsValue(1))
-                    {
+                    //if (keys.ContainsKey(1).Equals(0))
+                    //{
 
-                    }
+                    //    //if (keys.ContainsValue(0))
+                    //    //{
+                    //    //    using HttpClient httpClient = new();
+                    //    //    string baseurl = "https://localhost:7091/api/";
+                    //    //    var response = await httpClient.GetFromJsonAsync<ApiResponse>(baseurl + "StopEpcReader");
+                    //    //}
+                    //    //else
+                    //    //{
+                    //    //    using HttpClient httpClient = new();
+                    //    //    string baseurl = "https://localhost:7091/api/";
+                    //    //    var response = await httpClient.GetFromJsonAsync<ApiResponse>(baseurl + "StartEpcReader");
+                    //    //}
+
+                    //}
+                    //else if (keys.ContainsKey(1) == keys.ContainsValue(1))
+                    //{
+
+                    //}
 
 
                 }

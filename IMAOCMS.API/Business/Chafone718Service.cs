@@ -471,7 +471,7 @@ public class Chafone718Service : IChafone718Service
         if (result.Success)
         {
             var list = result.Data.ToList();
-            fAntennaList = list.ToList();
+            fAntennaList = list.Where(x=>x.IsActive==true).ToList();
 
 
             ConnectionAsync();
