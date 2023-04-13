@@ -15,6 +15,7 @@ namespace IMAOCMS.Core.Repositories
         Task AddRangeAsync(IEnumerable<T> entities);
         IDataResult<T> Update(T entity);
         void Add(T entity);
+        void AddRange(IEnumerable<T> entities);
         void Remove(T entity);
         void RemoveRange(IEnumerable<T> entities);
         Task<Result> RemoveSoft(T entity);

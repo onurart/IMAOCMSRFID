@@ -16,7 +16,7 @@ public class RelayCardService : IRelayCardService
     private static SerialPort _serialPort;
     public int devAddr = 1;
     public int inCount = 3;
-    public double readinterval = 1.0;
+    public double readinterval = 0.1;
     public RelayCardService(ILogger<RelayCardService> logger, IChafone718Service chafone718Service)
     {
         _logger = logger;
@@ -142,7 +142,7 @@ public class RelayCardService : IRelayCardService
                 byte[] toHexByte = GlobalClass.strToToHexByte("01020000000879CC");
                 //byte[] toHexByte = GlobalClass.strToToHexByte("0101000000083DCC");
                 _serialPort.Write(toHexByte, 0, toHexByte.Length);
-                Thread.Sleep(100);
+                Thread.Sleep(50);
                 if (_serialPort.BytesToRead > 0)
                 {
                     byte[] numArray = new byte[_serialPort.BytesToRead];
@@ -159,9 +159,9 @@ public class RelayCardService : IRelayCardService
                         {
                             await _chafone718Service.StartRead2Async();
                         }
-                        else
+                        else if (key.Key == 1 && key.Value == 1)
                         {
-                            await _chafone718Service.StopReadAsync();
+                            _chafone718Service.AddEpcDatabasee();
                         }
                     }
                     //if (keys.ContainsKey(1).Equals(0))

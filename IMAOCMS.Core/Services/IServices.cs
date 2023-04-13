@@ -12,6 +12,7 @@ namespace IMAOCMS.Core.Services
         IQueryable<T> Where(Expression<Func<T, bool>> predicate);
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
         void Add(T entity);
+        //void AddRange(IEnumerable<T> entities);
         Task<IDataResult<T>> AddAsync(T entity);
         Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities);
 

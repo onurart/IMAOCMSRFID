@@ -15,6 +15,8 @@ public interface IChafone718Service
     Task<ApiResponse> StartRead2Async();
     Task<ApiResponse> StopReadAsync();
     Task<ApiResponse> StartEpcReader();
+    Task<ApiResponse> AddEpcDatabase();
+    void AddEpcDatabasee();
    // Task<ApiResponse> ConStartAndStopAndClose();
     Task<ApiDataResponse<RFIDDevice>> AddDeviceConnectionSettingsDb(RFIDDeviceDto rFIDDevice);
     Task<ApiDataResponse<RFIDDeviceAntenna>> AddDeviceAntennaDb(RFIDDeviceAntennaDto rFIDDeviceAntennaDto);

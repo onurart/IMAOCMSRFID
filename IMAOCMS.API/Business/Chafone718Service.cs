@@ -298,12 +298,10 @@ public class Chafone718Service : IChafone718Service
             return await Task.FromResult(new ApiResponse() { Message = "Fault" + " Hata: " + ex.ToString(), Status = false });
         }
     }
-    private void AddRangeToDatabaseAsync()
+    private async void AddRangeToDatabaseAsync()
     {
         if (curList.Count != 0)
         {
-
-
             var value = curList.GroupBy(x => x.UID).Select(group =>
                    new
                    {
@@ -326,42 +324,38 @@ public class Chafone718Service : IChafone718Service
                     Rssi = item.Rssi,
                     Epc = item.Epc,
                     Ant = Convert.ToByte(item.Ant),
-                    EpcDate = DateTime.Now,
-                    CreatedDate = item.CreatedDate
+                    EpcDate = DateTime.Now
                 });
 
             }
 
             if (EpcData.Count != 0)
             {
-                foreach (var item in EpcData.Distinct())
-                {
-                    EpcReadData epcReadData = new EpcReadData
-                    {
-                        Id = item.Id,
-                        Count = item.Count,
-                        Rssi = item.Rssi,
-                        Epc = item.Epc,
-                        Ant = Convert.ToByte(item.Ant),
-                        EpcDate = DateTime.Now,
-                        CreatedDate = item.CreatedDate
-                    };
-                    _epcReadDataService.Add(epcReadData);
-                }
-                //var result = await _epcReadDataService.AddRangeAsync(EpcData);
-                //var resultes =  fCmdRet = RWDev.CloseSpecComPort(frmcomportindex);
+                var epcRead= EpcData.Distinct();
+               var res= await _epcReadDataService.AddRangeAsync(epcRead);
                 EpcData.Clear();
                 curList.Clear();
                 fIsInventoryScan = false;
             }
         }
-        //var result = EpcData2.Adapt(sa);
-
-        //sa.Adapt(EpcData2);
-
-
-
     }
+    public void AddEpcDatabasee()
+    {
+        AddRangeToDatabaseAsync();
+        EpcData.Clear();
+        curList.Clear();
+    }
+    public Task<ApiResponse> AddEpcDatabase()
+    {
+        AddRangeToDatabaseAsync();
+        EpcData.Clear();
+        curList.Clear();
+        return Task.FromResult(new ApiResponse() { Message = "Ok", Status = true });
+    }
+
+
+
+
     public Task<ApiResponse> StopReadAsync()
     {
         //toStopThread = true;
@@ -524,7 +518,7 @@ public class Chafone718Service : IChafone718Service
     byte ReadMem = 0;
     byte[] antlist = new byte[16];
     int AntennaNum = 16;
-    private async void flashmix_G2()
+    private void flashmix_G2()
     {
 
 

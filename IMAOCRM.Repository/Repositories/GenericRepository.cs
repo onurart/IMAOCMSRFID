@@ -28,6 +28,11 @@ namespace IMAOCRM.Repository.Repositories
             return new SuccessDataResult<T>(entity);
         }
 
+        public void AddRange(IEnumerable<T> entities)
+        {
+            _dbSet.AddRange(entities);
+        }
+
         public async Task AddRangeAsync(IEnumerable<T> entities)
         {
             await _dbSet.AddRangeAsync(entities);
