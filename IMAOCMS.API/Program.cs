@@ -1,5 +1,6 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using IMAOCMS.API;
 using IMAOCMS.API.Business;
 using IMAOCMS.API.Filters;
 using IMAOCMS.API.Modules;
@@ -18,7 +19,7 @@ logger.Debug("init main");
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-
+    
     // Add services to the container.
 
     builder.Services.AddControllers();
@@ -65,6 +66,9 @@ try
     });
 
 
+    builder.Services.AddHostedService<WindowsBackgroundService>();
+    builder.Host.UseWindowsService();
+
     var app = builder.Build();
     using (var context = new AppDbContext()) { context.Database.Migrate(); }
     // Configure the HTTP request pipeline.
@@ -102,6 +106,9 @@ try
         await timer2Service.StartAsync(CancellationToken.None);
         return "success";
     });
+
+    
+
     app.Run();
 }
 catch (Exception exception)

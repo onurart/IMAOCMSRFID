@@ -34,6 +34,19 @@ public class Chafone718Service : IChafone718Service
     private static object LockFlag = new object();
 
     public static List<RFIDTag> curList = new List<RFIDTag>();
+    public static List<RfidTemp> curList2 = new List<RfidTemp>();
+
+    public class RfidTemp
+    {
+        public byte PacketParam;
+        public byte LEN;
+        public string UID;
+        public int phase_begin;
+        public int phase_end;
+        public byte RSSI;
+        public byte ANT;
+        public int Handles;
+    }
     public void GetUid(IntPtr p, Int32 nEvt)
     {
 
@@ -43,6 +56,7 @@ public class Chafone718Service : IChafone718Service
             curList.Add(ce);
             total_tagnum++;
             CardNum++;
+            curList2.Add(ce.Adapt<RfidTemp>());
         }
     }
     BaseRequest baseRequest = new BaseRequest();
@@ -65,7 +79,7 @@ public class Chafone718Service : IChafone718Service
     private Thread? mythread = null;
     public static List<EpcReadData> EpcData = new();
     public static List<EpcReadData> EpcData2 = new();
-    public static EPCReadTemp EpcTemp;
+    public static List<EPCReadTemp> EpcTemp = new();
     private static bool fIsInventoryScan = false;
     private static bool toStopThread = false;
     private byte[] fPassWord = new byte[4];
@@ -94,11 +108,11 @@ public class Chafone718Service : IChafone718Service
         //int portNum = 3;
         int FrmPortIndex = 0;
         string strException = string.Empty;
-        fBaud = 6;
+        fBaud = Convert.ToByte(fIDDeviceDto.Baud+2);
         //if (fBaud > 2)
         //    fBaud = Convert.ToByte(fBaud + 2);
         fComAdr = 255;//广播地址打开设备
-        var result = fCmdRet = RWDev.OpenComPort(fIDDeviceDto.Portnum, ref fComAdr, Convert.ToByte(fIDDeviceDto.Baud), ref FrmPortIndex);
+        var result = fCmdRet = RWDev.OpenComPort(fIDDeviceDto.Portnum, ref fComAdr, fBaud, ref FrmPortIndex);
         if (fCmdRet != 0)
         {
             string strLog = "Connect failed: " + GetReturnCodeDesc(fCmdRet);
@@ -168,7 +182,8 @@ public class Chafone718Service : IChafone718Service
                     item.Antenna == 5 ? powerDbm[4] :
                     item.Antenna == 6 ? powerDbm[5] :
                     item.Antenna == 7 ? powerDbm[6] :
-                    item.Antenna == 8 ? powerDbm[7] : 0
+                    item.Antenna == 8 ? powerDbm[7] : 0,
+                    IsActive= (bool)item.IsActive
                 });
             }
             string strLog = "Get Power success ";
@@ -180,6 +195,7 @@ public class Chafone718Service : IChafone718Service
     {
         var value = await _rfidDeviceAntennaService.Where(x => x.RFIDDeviceId == antennaDto.RFIDDeviceId && x.Antenna == antennaDto.Antenna).FirstAsync();
         value.AntennaPower = antennaDto.AntennaPower;
+        value.IsActive=antennaDto.IsActive;
         var result = await _rfidDeviceAntennaService.UpdateAsync(value);
         var resultes = await _rfidDeviceAntennaService.GetAllAsync();
         byte[] powerDbm = new byte[16];
@@ -298,6 +314,19 @@ public class Chafone718Service : IChafone718Service
             return await Task.FromResult(new ApiResponse() { Message = "Fault" + " Hata: " + ex.ToString(), Status = false });
         }
     }
+    public async Task<ApiDataListResponse<RfidTemp>> GetRealTime()
+    {
+
+        try
+        {
+            return await Task.FromResult(new ApiDataListResponse<RfidTemp>() { Data = curList2, Message = "Succesfully", Status = true });
+        }
+        catch (Exception)
+        {
+
+            return await Task.FromResult(new ApiDataListResponse<RfidTemp>() { Data = curList2, Message = "Error", Status = false });
+        }
+    }
     private async void AddRangeToDatabaseAsync()
     {
         if (curList.Count != 0)
@@ -331,8 +360,8 @@ public class Chafone718Service : IChafone718Service
 
             if (EpcData.Count != 0)
             {
-                var epcRead= EpcData.Distinct();
-               var res= await _epcReadDataService.AddRangeAsync(epcRead);
+                var epcRead = EpcData.Distinct();
+                var res = await _epcReadDataService.AddRangeAsync(epcRead);
                 EpcData.Clear();
                 curList.Clear();
                 fIsInventoryScan = false;
@@ -424,30 +453,34 @@ public class Chafone718Service : IChafone718Service
     }
     void ConnectionAsync()
     {
-        int portNum = 3;
-        int FrmPortIndex = 0;
-        string strException = string.Empty;
-        fBaud = 6;
-        //if (fBaud > 2)
-        //    fBaud = Convert.ToByte(fBaud + 2);
-        fComAdr = 255;//广播地址打开设备
-
-        var result = fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
-        if (result != 0)
-
-        //fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
-        //if (fCmdRet != 0)
+        var value = _rfidDeviceService.Where(x => x.IsActive == true).FirstOrDefault();
+        if (value != null)
         {
-            string strLog = "Connect failed: " + GetReturnCodeDesc(fCmdRet);
-            _logger.LogError(strLog);
-        }
-        else
-        {
-            frmcomportindex = FrmPortIndex;
-            string strLog = "Connected " + portNum.ToString() + "@" + fBaud.ToString();
-            _logger.LogInformation(strLog);
-            if (FrmPortIndex > 0)
-                RWDev.InitRFIDCallBack(elegateRFIDCallBack, true, FrmPortIndex);
+            int portNum = value.Portnum;
+            int FrmPortIndex = 0;
+            string strException = string.Empty;
+            fBaud = Convert.ToByte(value.Baud + 2);
+            //if (fBaud > 2)
+            //    fBaud = Convert.ToByte(fBaud + 2);
+            fComAdr = 255;//广播地址打开设备
+
+            var result = fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
+            if (result != 0)
+
+            //fCmdRet = RWDev.OpenComPort(portNum, ref fComAdr, fBaud, ref FrmPortIndex);
+            //if (fCmdRet != 0)
+            {
+                string strLog = "Connect failed: " + GetReturnCodeDesc(fCmdRet);
+                _logger.LogError(strLog);
+            }
+            else
+            {
+                frmcomportindex = FrmPortIndex;
+                string strLog = "Connected " + portNum.ToString() + "@" + fBaud.ToString();
+                _logger.LogInformation(strLog);
+                if (FrmPortIndex > 0)
+                    RWDev.InitRFIDCallBack(elegateRFIDCallBack, true, FrmPortIndex);
+            }
         }
     }
     async Task DisConnectAsync()
@@ -465,7 +498,7 @@ public class Chafone718Service : IChafone718Service
         if (result.Success)
         {
             var list = result.Data.ToList();
-            fAntennaList = list.Where(x=>x.IsActive==true).ToList();
+            fAntennaList = list.Where(x => x.IsActive == true).ToList();
 
 
             ConnectionAsync();
@@ -604,7 +637,7 @@ public class Chafone718Service : IChafone718Service
                             break;
                     }
                     //_logger.LogInformation("Anten Döngü" + InAnt.ToString());
-                    if (fCmdRet != 48 || fCmdRet != 55)
+                    //if (fCmdRet != 48 || fCmdRet != 55)
                         fCmdRet = RWDev.InventoryMix_G2(ref fComAdr, Qvalue, Session, MaskMem, MaskAdr, MaskLen, MaskData, MaskFlag, ReadMem, ReadAdr, ReadLen, Psd, Target, InAnt, Scantime, FastFlag, EPC, ref Ant, ref Totallen, ref TagNum, frmcomportindex);
 
 
