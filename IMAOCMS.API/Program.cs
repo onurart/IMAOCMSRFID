@@ -19,7 +19,7 @@ logger.Debug("init main");
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    
+
     // Add services to the container.
 
     builder.Services.AddControllers();
@@ -66,9 +66,9 @@ try
     });
 
 
-    builder.Services.AddHostedService<WindowsBackgroundService>();
-    builder.Host.UseWindowsService();
 
+    builder.Host.UseWindowsService();
+    builder.Services.AddHostedService<WindowsBackgroundService>();
     var app = builder.Build();
     using (var context = new AppDbContext()) { context.Database.Migrate(); }
     // Configure the HTTP request pipeline.
@@ -107,7 +107,7 @@ try
         return "success";
     });
 
-    
+
 
     app.Run();
 }

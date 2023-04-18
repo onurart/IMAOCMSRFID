@@ -32,22 +32,22 @@ public sealed class WindowsBackgroundService : BackgroundService
                 // not bu iki işlemi yapacak reel işlemler apiden alınıp servis hazırlanmalıdır!!!!
                 if (_isFirst)
                 {
-                    DirectoryInfo file = new("c:\\service");
-                    if (!file.Exists)
-                    {
-                        file.Create();
-                    }
-                    if (_requiredReboot)
-                    {
-                        #region Open Browser
-                        //DoOpenBrowser();
-                        _logger.LogWarning("Opened browser for first run: {time}", DateTimeOffset.Now);
-                        #endregion
-                    }
+                    //DirectoryInfo file = new("c:\\service");
+                    //if (!file.Exists)
+                    //{
+                    //    file.Create();
+                    //}
+                    //if (_requiredReboot)
+                    //{
+                    //    #region Open Browser
+                    //    //DoOpenBrowser();
+                    //    _logger.LogWarning("Opened browser for first run: {time}", DateTimeOffset.Now);
+                    //    #endregion
+                    //}
                     _requiredReboot = false;
                     #region Canlı izleme
                     await StartAllDeviceMonitoring();
-                    File.AppendAllText("c:\\service\\data.txt", $"\nstart-monitor-first" + DateTimeOffset.Now.ToString());
+                    //File.AppendAllText("c:\\service\\data.txt", $"\nstart-monitor-first" + DateTimeOffset.Now.ToString());
                     #endregion
                     _isFirst = false;
                 }
@@ -64,7 +64,7 @@ public sealed class WindowsBackgroundService : BackgroundService
                     _requiredReboot4changed = false;
                     #region Canlı izleme
                     await StartAllDeviceMonitoring();
-                    File.AppendAllText("c:\\service\\data.txt", $"\nstart-monitor-reboot" + DateTimeOffset.Now.ToString());
+                    //File.AppendAllText("c:\\service\\data.txt", $"\nstart-monitor-reboot" + DateTimeOffset.Now.ToString());
                     #endregion
                     _oldNetworkValue = _isNetworkOnline;
                 }
@@ -91,13 +91,15 @@ public sealed class WindowsBackgroundService : BackgroundService
     {
         File.AppendAllText("c:\\service\\data.txt", $"\nstart-monitor" + DateTimeOffset.Now.ToString());
         using HttpClient httpClient = new();
-        string baseurl = "http://localhost:7000/api/";
+        //string baseurl = "https://localhost:7000/api/";
+        string baseurl = "https://localhost:7000/api/StartRelayCard";
             //ConfigurationHelper.Configuration["Kestrel:BaseUrl"];
         //var appconfig=_config.GetSection()
        // HttpResponseMessage data1 = await httpClient.GetAsync(baseurl + "Devices/StopAllRealTimeMonitoring");
         //string str1 = await data1.Content.ReadAsStringAsync();
 
-        var response = await httpClient.GetFromJsonAsync<ApiResponse>(baseurl + "StartRelayCard");
+        //var response = await httpClient.GetFromJsonAsync<ApiDicListResponse>(baseurl + "StartRelayCard");
+        var response = await httpClient.GetFromJsonAsync<ApiDicListResponse>(baseurl);
 
         if (response != null)
         {
